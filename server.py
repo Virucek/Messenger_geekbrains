@@ -38,8 +38,9 @@ def main():
                         help='listening port of server')
 
     args = parser.parse_args()
-    # if args.port < 1024 or args.port > 65535:
-    #     raise ValueError
+    if args.port < 1024 or args.port > 65535:
+        print('порт должен быть в диапазоне 1024-65535')
+        sys.exit(1)
 
     with socket(AF_INET, SOCK_STREAM) as server_sock:
         try:

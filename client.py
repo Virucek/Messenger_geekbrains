@@ -1,4 +1,5 @@
 import json
+import sys
 from socket import *
 import argparse
 import time
@@ -28,12 +29,17 @@ def main():
     parser = argparse.ArgumentParser()
 
     parser.add_argument('host', nargs='?', default=DEFAULT_HOST, help='server host ip address')
-    parser.add_argument('port', nargs='?', default=DEFAULT_PORT, help='server port')
+    parser.add_argument('port', nargs='?', default=DEFAULT_PORT, type=int, help='server port')
 
     args = parser.parse_args()
 
     with socket(AF_INET, SOCK_STREAM) as client_sock:
-        client_sock.connect((args.host, args.port))
+        try:
+            client_sock.connect((args.host, args.port))
+        except OSError as e:
+            print(e)
+            sys.exit(1)
+
         send_message(client_sock, create_presence())
         try:
             answer = get_message(client_sock)
