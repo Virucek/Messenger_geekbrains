@@ -3,28 +3,23 @@ from socket import *
 import argparse
 import time
 
+from include import protocol
 from include.utils import get_message, send_message
 from include.variables import *
 
 
 def process_incoming_message(message):
     if RESPONSE in message:
-        if message[RESPONSE] == RESPONSE_OK:
+        if message[RESPONSE] == RESPCODE_OK:
             return True
         return False
     return ValueError
 
 
-def create_presence(user_name='Anonimous'):
-    msg = {
-        ACTION: PRESENCE,
-        TIME: time.time(),
-        TYPE: 'status',
-        USER: {
-            ACCOUNT_NAME: user_name,
-            STATUS: 'text',
-        }
-    }
+def create_presence():
+    msg = protocol.PRESENCE_MSG_CLIENT
+    msg[TIME] = time.time()
+    msg[USER][STATUS] = 'Presense status test?'
     return msg
 
 
@@ -43,9 +38,9 @@ def main():
         try:
             answer = get_message(client_sock)
             if process_incoming_message(answer):
-                print(f'Сообщение от сервера 200! ОК!')
+                print('Сообщение от сервера: 200')
             else:
-                print('Сообщение от сервера не ОК! 400')
+                print(f'Сообщение от сервера:\n {answer}')
         except ValueError:
             print('Ошибка декодирования сообщения от сервера')
 

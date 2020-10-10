@@ -15,6 +15,8 @@ TYPE = 'type'
 USER = 'user'
 ACCOUNT_NAME = 'account_name'
 STATUS = 'status'
+
+NOT_LOGGED_USER = 'Anonymous'
 # Actions
 PRESENCE = 'presence'
 PROBE = 'probe'
@@ -27,10 +29,10 @@ LEAVE = 'leave'
 RESPONSE = 'response'
 ALERT = 'alert'
 
-RESPONSE_OK = 200
+RESPCODE_OK = 200
 RESPONSE_OK_TEXT = 'OK'
 
-RESPONSE_BAD_REQUEST = 400
+RESPCODE_BAD_REQ = 400
 RESPONSE_BAD_REQUEST_TEXT = 'Bad Request'
 
-RESPONSE_SERVER_ERROR = 500
+RESPCODE_SERVER_ERROR = 500

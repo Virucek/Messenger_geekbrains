@@ -9,30 +9,25 @@ from include.variables import *
 
 
 def create_response(resp_code, _error=None):
-    if resp_code == RESPONSE_OK:
+    if resp_code == RESPCODE_OK:
         return protocol.SERVER_RESPONSE_OK
-    elif resp_code == RESPONSE_BAD_REQUEST:
+    elif resp_code == RESPCODE_BAD_REQ:
         return protocol.SERVER_RESPONSE_BAD_REQUEST
     else:
         response = protocol.SERVER_RESPONSE_SERVER_ERROR
-        if error is not None:
-            response.update('error', error)
+        if _error is not None:
+            response.update({'error': _error})
         return response
 
 
 def process_incoming_message(msg):
-    i = 0
     if msg[ACTION] == PRESENCE:
-        for key in msg.keys():
-            if key not in protocol.PRESENCE_MSG_CLIENT:
-                return RESPONSE_BAD_REQUEST
-            i += 1
-        if i != len(protocol.PRESENCE_MSG_CLIENT):
-            return RESPONSE_BAD_REQUEST
-        if msg[USER][ACCOUNT_NAME] != 'Anonimous':
-            return RESPONSE_BAD_REQUEST
-        return RESPONSE_OK
-    return RESPONSE_BAD_REQUEST
+        if msg.keys() != protocol.PRESENCE_MSG_CLIENT.keys():
+            return RESPCODE_BAD_REQ
+        if msg[USER][ACCOUNT_NAME] != NOT_LOGGED_USER:
+            return RESPCODE_BAD_REQ
+        return RESPCODE_OK
+    return RESPCODE_BAD_REQ
 
 
 def main():
@@ -60,10 +55,12 @@ def main():
                 error = None
                 try:
                     inc_msg = get_message(client_sock)
+                    print(inc_msg)
                     resp_code = process_incoming_message(inc_msg)
                 except ValueError:
                     error = 'Ошибка декодирования сообщения от клиента'
-                    resp_code = RESPONSE_SERVER_ERROR
+                    resp_code = RESPCODE_SERVER_ERROR
+                    print(error)
                 resp_msg = create_response(resp_code, error)
                 send_message(client_sock, resp_msg)
 
