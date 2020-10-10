@@ -9,3 +9,21 @@ MAX_CONNECTIONS = 5
 MAX_PACKAGE_SIZE = 2048
 
 ENCODING = 'utf-8'
+
+ACTION = 'action'
+TIME = 'time'
+TYPE = 'type'
+USER = 'user'
+ACCOUNT_NAME = 'account_name'
+STATUS = 'status'
+
+PRESENCE = 'presence'
+
+RESPONSE = 'response'
+ALERT = 'alert'
+
+RESPONSE_OK = 200
+RESPONSE_OK_TEXT = 'OK'
+
+RESPONSE_BAD_REQUEST = 400
+RESPONSE_BAD_REQUEST_TEXT = 'Bad Request'
