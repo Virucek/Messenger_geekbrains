@@ -14,7 +14,7 @@ while True:
         break
     elif action == 's':
         client_proc_num = input('Введите количество клиентских процессов (до 25): ')
-        if int(client_proc_num):
+        if client_proc_num.isdigit():
             client_proc_num = int(client_proc_num)
             if 0 < client_proc_num < 26:
                 PROCESSES.append(subprocess.Popen('python server.py',
