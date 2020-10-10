@@ -3,20 +3,36 @@ import json
 from socket import *
 import sys
 
-from include.msg_formats import PRESENCE_MSG_CLIENT
+from include import protocol
 from include.utils import get_message, send_message
 from include.variables import *
 
 
+def create_response(resp_code, _error=None):
+    if resp_code == RESPONSE_OK:
+        return protocol.SERVER_RESPONSE_OK
+    elif resp_code == RESPONSE_BAD_REQUEST:
+        return protocol.SERVER_RESPONSE_BAD_REQUEST
+    else:
+        response = protocol.SERVER_RESPONSE_SERVER_ERROR
+        if error is not None:
+            response.update('error', error)
+        return response
+
+
 def process_incoming_message(msg):
-    for key in msg.keys():
-        if key not in PRESENCE_MSG_CLIENT:
-            return {RESPONSE: RESPONSE_BAD_REQUEST}
-    if msg[ACTION] != PRESENCE:
-        return {RESPONSE: RESPONSE_BAD_REQUEST}
-    if msg[USER][ACCOUNT_NAME] != 'Anonimous':
-        return {RESPONSE: RESPONSE_BAD_REQUEST}
-    return {RESPONSE: RESPONSE_OK}
+    i = 0
+    if msg[ACTION] == PRESENCE:
+        for key in msg.keys():
+            if key not in protocol.PRESENCE_MSG_CLIENT:
+                return RESPONSE_BAD_REQUEST
+            i += 1
+        if i != len(protocol.PRESENCE_MSG_CLIENT):
+            return RESPONSE_BAD_REQUEST
+        if msg[USER][ACCOUNT_NAME] != 'Anonimous':
+            return RESPONSE_BAD_REQUEST
+        return RESPONSE_OK
+    return RESPONSE_BAD_REQUEST
 
 
 def main():
@@ -27,7 +43,7 @@ def main():
                         help='listening port of server')
 
     args = parser.parse_args()
-    # if args.port < 1023 or args.port > 65535:
+    # if args.port < 1024 or args.port > 65535:
     #     raise ValueError
 
     with socket(AF_INET, SOCK_STREAM) as server_sock:
@@ -41,12 +57,15 @@ def main():
         while True:
             client_sock, addr = server_sock.accept()
             with client_sock:
+                error = None
                 try:
                     inc_msg = get_message(client_sock)
-                    resp_msg = process_incoming_message(inc_msg)
-                    send_message(client_sock, resp_msg)
+                    resp_code = process_incoming_message(inc_msg)
                 except ValueError:
-                    print('Ошибка декодирования сообщения от клиента')
+                    error = 'Ошибка декодирования сообщения от клиента'
+                    resp_code = RESPONSE_SERVER_ERROR
+                resp_msg = create_response(resp_code, error)
+                send_message(client_sock, resp_msg)
 
 
 if __name__ == '__main__':

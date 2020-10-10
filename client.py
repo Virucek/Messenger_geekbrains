@@ -7,6 +7,14 @@ from include.utils import get_message, send_message
 from include.variables import *
 
 
+def process_incoming_message(message):
+    if RESPONSE in message:
+        if message[RESPONSE] == RESPONSE_OK:
+            return True
+        return False
+    return ValueError
+
+
 def create_presence(user_name='Anonimous'):
     msg = {
         ACTION: PRESENCE,
@@ -34,7 +42,10 @@ def main():
         send_message(client_sock, create_presence())
         try:
             answer = get_message(client_sock)
-            print(answer)
+            if process_incoming_message(answer):
+                print(f'Сообщение от сервера 200! ОК!')
+            else:
+                print('Сообщение от сервера не ОК! 400')
         except ValueError:
             print('Ошибка декодирования сообщения от сервера')
 
