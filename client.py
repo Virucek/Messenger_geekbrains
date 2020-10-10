@@ -2,6 +2,8 @@ import json
 from socket import *
 import argparse
 import time
+
+from include.utils import get_message, send_message
 from include.variables import *
 
 
@@ -29,13 +31,12 @@ def main():
 
     with socket(AF_INET, SOCK_STREAM) as client_sock:
         client_sock.connect((args.host, args.port))
-        msg_out = json.dumps(create_presence())
-        client_sock.send(msg_out.encode(ENCODING))
+        send_message(client_sock, create_presence())
         try:
-            answer = client_sock.recv(MAX_PACKAGE_SIZE)
+            answer = get_message(client_sock)
             print(answer)
-        except Exception:
-            pass
+        except ValueError:
+            print('Ошибка декодирования сообщения от сервера')
 
 
 if __name__ == '__main__':

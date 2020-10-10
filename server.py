@@ -4,7 +4,7 @@ from socket import *
 import sys
 
 from include.msg_formats import PRESENCE_MSG_CLIENT
-from include.utils import get_message
+from include.utils import get_message, send_message
 from include.variables import *
 
 
@@ -41,10 +41,12 @@ def main():
         while True:
             client_sock, addr = server_sock.accept()
             with client_sock:
-                inc_msg = get_message(client_sock)
-                print('Сообщение: ', inc_msg)
-                resp = process_incoming_message(inc_msg)
-                client_sock.send(json.dumps(resp).encode(ENCODING))
+                try:
+                    inc_msg = get_message(client_sock)
+                    resp_msg = process_incoming_message(inc_msg)
+                    send_message(client_sock, resp_msg)
+                except ValueError:
+                    print('Ошибка декодирования сообщения от клиента')
 
 
 if __name__ == '__main__':

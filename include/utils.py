@@ -12,3 +12,12 @@ def get_message(client_socket):
             return msg
         raise ValueError
     raise ValueError
+
+
+def send_message(socket, message):
+    if isinstance(message, dict):
+        json_msg = json.dumps(message)
+        encoded_msg = json_msg.encode(ENCODING)
+        socket.send(encoded_msg)
+    else:
+        raise ValueError
