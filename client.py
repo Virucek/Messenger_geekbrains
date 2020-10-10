@@ -1,4 +1,4 @@
-import json
+""" Клиентский скрипт """
 import sys
 from socket import *
 import argparse

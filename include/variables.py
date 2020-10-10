@@ -1,3 +1,4 @@
+""" Переменные константные """
 # Default server port
 DEFAULT_PORT = 7777
 # Default server IP Host

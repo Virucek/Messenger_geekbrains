@@ -1,3 +1,4 @@
+""" Хранилище вспомогательных общих функций """
 import json
 
 from include.variables import MAX_PACKAGE_SIZE, ENCODING

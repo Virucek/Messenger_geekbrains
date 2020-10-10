@@ -1,5 +1,5 @@
+""" Серверный скрипт """
 import argparse
-import json
 from socket import *
 import sys
 
@@ -63,6 +63,7 @@ def main():
                     resp_code = RESPCODE_SERVER_ERROR
                     print(error)
                 resp_msg = create_response(resp_code, error)
+                print(resp_msg)
                 send_message(client_sock, resp_msg)
 
 
