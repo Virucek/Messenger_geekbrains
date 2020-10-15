@@ -9,7 +9,7 @@ from include.variables import RESPCODE_OK, ACTION, PRESENCE, TIME, TYPE, STATUS,
 from server import create_response, process_incoming_message
 
 
-class TestServerClass(TestCase):
+class TestServer(TestCase):
 
     def test_create_OK_request(self):
         self.assertEqual(create_response(RESPCODE_OK), SERVER_RESPONSE_OK)
