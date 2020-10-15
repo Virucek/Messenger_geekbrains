@@ -14,7 +14,7 @@ def process_incoming_message(message):
         if message[RESPONSE] == RESPCODE_OK:
             return True
         return False
-    return ValueError
+    raise ValueError
 
 
 def create_presence():
