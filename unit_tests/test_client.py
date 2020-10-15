@@ -6,7 +6,7 @@ from include.variables import TIME, ACTION, PRESENCE, TYPE, STATUS, USER, ACCOUN
     RESPCODE_OK, ALERT, RESPCODE_BAD_REQ, RESPCODE_SERVER_ERROR
 
 
-class TestClientClass(TestCase):
+class TestClient(TestCase):
 
     def test_create_presence(self):
         test_msg = create_presence()
