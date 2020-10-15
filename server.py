@@ -21,12 +21,15 @@ def create_response(resp_code, _error=None):
 
 
 def process_incoming_message(msg):
-    if msg[ACTION] == PRESENCE:
-        if msg.keys() != protocol.PRESENCE_MSG_CLIENT.keys():
-            return RESPCODE_BAD_REQ
-        if msg[USER][ACCOUNT_NAME] != NOT_LOGGED_USER:
-            return RESPCODE_BAD_REQ
-        return RESPCODE_OK
+    if ACTION in msg:
+        if msg[ACTION] == PRESENCE:
+            if msg.keys() != protocol.PRESENCE_MSG_CLIENT.keys():
+                return RESPCODE_BAD_REQ
+            if msg[USER].keys() != protocol.PRESENCE_MSG_CLIENT[USER].keys():
+                return RESPCODE_BAD_REQ
+            if msg[USER][ACCOUNT_NAME] != NOT_LOGGED_USER:
+                return RESPCODE_BAD_REQ
+            return RESPCODE_OK
     return RESPCODE_BAD_REQ
 
 
