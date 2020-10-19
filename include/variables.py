@@ -9,6 +9,10 @@ MAX_CONNECTIONS = 5
 MAX_PACKAGE_SIZE = 2048
 # Default encoding
 ENCODING = 'utf-8'
+# Default log level
+LOG_LEVEL = 'DEBUG'
+
+
 # JMI protocol fields
 ACTION = 'action'
 TIME = 'time'

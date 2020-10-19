@@ -3,16 +3,22 @@ import sys
 from socket import *
 import argparse
 import time
+import logging
+import log_configs.client_log_config
 
 from include import protocol
 from include.utils import get_message, send_message
 from include.variables import *
 
+CLIENT_LOGGER = logging.getLogger('messenger.client')
+
 
 def process_incoming_message(message):
     if RESPONSE in message:
         if message[RESPONSE] == RESPCODE_OK:
+            CLIENT_LOGGER.debug('Полученное сообщение ОК')
             return True
+        CLIENT_LOGGER.debug('Сервер ответил ошибкой')
         return False
     raise ValueError
 
@@ -21,6 +27,7 @@ def create_presence():
     msg = protocol.PRESENCE_MSG_CLIENT
     msg[TIME] = time.time()
     msg[USER][STATUS] = 'Presense status test?'
+    CLIENT_LOGGER.debug(f'Сформировано {PRESENCE} сообщение:\n{msg}')
     return msg
 
 
@@ -36,19 +43,19 @@ def main():
     with socket(AF_INET, SOCK_STREAM) as client_sock:
         try:
             client_sock.connect((args.host, args.port))
+            CLIENT_LOGGER.info(f'Исходящее подключение к серверу: {args.host}:{args.port}')
         except OSError as e:
-            print(e)
+            CLIENT_LOGGER.critical(e)
             sys.exit(1)
 
         send_message(client_sock, create_presence())
+        CLIENT_LOGGER.info(f'Отправлено сообщение')
         try:
             answer = get_message(client_sock)
-            if process_incoming_message(answer):
-                print('Сообщение от сервера: 200')
-            else:
-                print(f'Сообщение от сервера:\n {answer}')
+            CLIENT_LOGGER.info(f'Получено сообщение от сервера: {answer}')
+            process_incoming_message(answer)
         except ValueError:
-            print('Ошибка декодирования сообщения от сервера')
+            CLIENT_LOGGER.error('Ошибка декодирования сообщения от сервера')
 
 
 if __name__ == '__main__':
