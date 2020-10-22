@@ -23,6 +23,12 @@ LOG_HANDLER.setFormatter(LOG_FORMATTER)
 
 
 def get_logger(logger_name=LOGGER_NAME):
+    """
+    Функция для получения логгера. Добавляются необходимые хендлеры, устанавливается уровень логгирования,
+    присваивается rfilename и передается в extra в LoggerAdapter,
+    чтобы постоянно вручную не передавать rfilename на каждый вызов логгера.
+    Возвращает полученный экземпляр класса LoggerAdapter
+    """
     logger = logging.getLogger(logger_name)
     logger.addHandler(LOG_HANDLER)
     logger.setLevel(LOG_LEVEL)
