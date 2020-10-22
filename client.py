@@ -3,16 +3,17 @@ import sys
 from socket import *
 import argparse
 import time
-import logging
-import log_configs.client_log_config
 
 from include import protocol
+from include.decorators import Log
 from include.utils import get_message, send_message
 from include.variables import *
+from log_configs.client_log_config import get_logger
 
-CLIENT_LOGGER = logging.getLogger('messenger.client')
+CLIENT_LOGGER = get_logger()
 
 
+@Log()
 def process_incoming_message(message):
     if RESPONSE in message:
         if message[RESPONSE] == RESPCODE_OK:
@@ -23,6 +24,7 @@ def process_incoming_message(message):
     raise ValueError
 
 
+@Log()
 def create_presence():
     msg = protocol.PRESENCE_MSG_CLIENT
     msg[TIME] = time.time()

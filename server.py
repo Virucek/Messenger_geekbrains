@@ -4,14 +4,15 @@ from socket import *
 import sys
 
 from include import protocol
+from include.decorators import log
 from include.utils import get_message, send_message
 from include.variables import *
-import logging
-import log_configs.server_log_config
+from log_configs.server_log_config import get_logger
 
-SERVER_LOGGER = logging.getLogger('messenger.server')
+SERVER_LOGGER = get_logger()
 
 
+@log
 def create_response(resp_code, _error=None):
     if resp_code == RESPCODE_OK:
         SERVER_LOGGER.debug(f'Сформирован {RESPCODE_OK} ответ')
@@ -27,6 +28,7 @@ def create_response(resp_code, _error=None):
         return response
 
 
+@log
 def process_incoming_message(msg):
     if ACTION in msg:
         if msg[ACTION] == PRESENCE:
@@ -75,7 +77,7 @@ def main():
                 try:
                     inc_msg = get_message(client_sock)
                     SERVER_LOGGER.debug('Получено сообщение:'
-                                        f'{inc_msg}')
+                                        f'{inc_msg}', extra={'filename': 'test'})
                     resp_code = process_incoming_message(inc_msg)
                 except ValueError:
                     error = 'Ошибка декодирования сообщения от клиента'
