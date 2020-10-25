@@ -26,3 +26,11 @@ SERVER_RESPONSE_BAD_REQUEST = {
 SERVER_RESPONSE_SERVER_ERROR = {
     RESPONSE: RESPCODE_SERVER_ERROR,
 }
+
+# Шаблон сообщения в чат
+CHAT_MSG_CLIENT = {
+    ACTION: MSG,
+    TIME: None,
+    FROM: None,
+    MESSAGE: None
+}
