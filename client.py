@@ -111,6 +111,8 @@ def main():
     else:
         user_name = args.user_name
 
+    print(f'Клиентское окно. Имя клиента - {user_name}')
+
     with socket(AF_INET, SOCK_STREAM) as client_sock:
         try:
             client_sock.connect((args.host, args.port))
