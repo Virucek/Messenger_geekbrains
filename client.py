@@ -68,28 +68,19 @@ def read_from_socket(client_sock):
             CLIENT_LOGGER.error(f'Соединение с сервером разорвано@!!!!!!!')
             sys.exit(1)
 
+
 def main():
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('host', nargs='?', default=DEFAULT_HOST, help='server host ip address')
     parser.add_argument('port', nargs='?', default=DEFAULT_PORT, type=int, help='server port')
-    parser.add_argument('-m', action='store', dest='mode', default='read', help='mode of work')
     parser.add_argument('-u', action='store', dest='user_name', help='mode of work')
 
     args = parser.parse_args()
 
-    if args.mode not in ('read', 'write'):
-        CLIENT_LOGGER.critical('Режим работы не распознан! Поддерживаются только read и write')
-        sys.exit(1)
-
-    mode = args.mode
-    print(f'Запущен клиент {args.user_name} в {mode} режиме!')
-
     if not args.user_name:
-        user_name = input(f'Введите имя пользователя (default {NOT_LOGGED_USER} - пустое значение):')
-        if not user_name:
-            user_name = NOT_LOGGED_USER
+        user_name = input(f'Введите имя пользователя:')
     else:
         user_name = args.user_name
 
