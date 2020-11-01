@@ -1,5 +1,6 @@
 """ Клиентский скрипт """
 import sys
+import threading
 from socket import *
 import argparse
 import time
@@ -47,13 +48,33 @@ def create_presence(user_name):
     return msg
 
 
+@Log()
+def write_to_socket(client_sock, user_name):
+    while True:
+        try:
+            send_message(client_sock, create_message(user_name))
+        except:
+            CLIENT_LOGGER.error(f'соединение с сервером разорвано')
+            sys.exit(1)
+
+
+@Log()
+def read_from_socket(client_sock):
+    while True:
+        try:
+            process_incoming_message(get_message(client_sock))
+        except Exception as e:
+            print(e)
+            CLIENT_LOGGER.error(f'Соединение с сервером разорвано@!!!!!!!')
+            sys.exit(1)
+
 def main():
 
     parser = argparse.ArgumentParser()
 
     parser.add_argument('host', nargs='?', default=DEFAULT_HOST, help='server host ip address')
     parser.add_argument('port', nargs='?', default=DEFAULT_PORT, type=int, help='server port')
-    parser.add_argument('-m', action='store', dest='mode', default='listen', help='mode of work')
+    parser.add_argument('-m', action='store', dest='mode', default='read', help='mode of work')
     parser.add_argument('-u', action='store', dest='user_name', help='mode of work')
 
     args = parser.parse_args()
@@ -89,20 +110,16 @@ def main():
         except ValueError:
             CLIENT_LOGGER.error('Ошибка декодирования сообщения от сервера')
 
+        write_thread = threading.Thread(target=write_to_socket, args=(client_sock, user_name), daemon=True)
+        write_thread.start()
+        read_thread = threading.Thread(target=read_from_socket, args=(client_sock,), daemon=True)
+        read_thread.start()
+
         while True:
-            if mode == 'write':
-                try:
-                    send_message(client_sock, create_message(user_name))
-                except:
-                    CLIENT_LOGGER.error(f'соединение с сервером разорвано')
-                    sys.exit(1)
-            if mode == 'read':
-                try:
-                    process_incoming_message(get_message(client_sock))
-                except Exception as e:
-                    print(e)
-                    CLIENT_LOGGER.error(f'Соединение с сервером разорвано@!!!!!!!')
-                    sys.exit(1)
+            time.sleep(0.5)
+            if write_thread.is_alive() and read_thread.is_alive():
+                continue
+            break
 
 
 if __name__ == '__main__':

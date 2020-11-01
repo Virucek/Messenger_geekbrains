@@ -59,7 +59,7 @@ def create_logout_message(user_name):
 
 
 @log
-def process_incoming_message(msg, msg_list=[]):
+def process_incoming_message(msg, msg_list=[], client_names=None, client=None):
     if ACTION in msg:
         if msg[ACTION] == PRESENCE:
             if msg.keys() != protocol.PRESENCE_MSG_CLIENT.keys():
@@ -74,6 +74,12 @@ def process_incoming_message(msg, msg_list=[]):
             SERVER_LOGGER.debug(f'Сообщение {PRESENCE} корректное. Ответ успешный')
 
             msg_list.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
+            if msg[USER][ACCOUNT_NAME] in client_names.keys():
+                SERVER_LOGGER.error('Имя пользователя уже занято')
+                response = RESPCODE_BAD_REQ
+                response[ALERT] = 'Имя пользователя уже занято'
+                return RESPCODE_BAD_REQ
+            client_names[msg[USER][ACCOUNT_NAME]] = client
             return RESPCODE_OK
         elif msg[ACTION] == MSG:
             if msg.keys() != protocol.CHAT_MSG_CLIENT.keys():
@@ -107,6 +113,7 @@ def main():
             sys.exit(1)
 
         clients, messages = [], []
+        client_names = dict()
 
         server_sock.listen(MAX_CONNECTIONS)
         SERVER_LOGGER.info(f'Запущен сервер на порту: {args.port}')
@@ -137,7 +144,7 @@ def main():
                         inc_msg = get_message(client)
                         SERVER_LOGGER.debug('Получено сообщение:'
                                             f'{inc_msg}')
-                        resp_code = process_incoming_message(inc_msg, messages)
+                        resp_code = process_incoming_message(inc_msg, messages, client_names, client)
                         if resp_code is not None:
                             resp_msg = create_response(resp_code)
                             SERVER_LOGGER.info('Отправлен ответ:'
@@ -155,13 +162,15 @@ def main():
 
             if messages and send_data_lst:
                 msg = create_echo_message(messages)
+                sender_user = messages[0][0]
                 del messages[0]
                 for wait_client in send_data_lst:
-                    try:
-                        send_message(wait_client, msg)
-                    except:
-                        SERVER_LOGGER.info(f'Клиент {wait_client.getpeername()} отключился от сервера!')
-                        clients.remove(wait_client)
+                    if sender_user == '' or wait_client != client_names[sender_user]:
+                        try:
+                            send_message(wait_client, msg)
+                        except:
+                            SERVER_LOGGER.info(f'Клиент {wait_client.getpeername()} отключился от сервера!')
+                            clients.remove(wait_client)
 
 
 if __name__ == '__main__':
