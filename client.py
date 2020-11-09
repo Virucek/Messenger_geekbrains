@@ -10,11 +10,12 @@ from include.decorators import Log
 from include.utils import get_message, send_message
 from include.variables import *
 from log_configs.client_log_config import get_logger
+from metaclasses import ClientVerifier
 
 CLIENT_LOGGER = get_logger()
 
 
-class ClientSender(threading.Thread):
+class ClientSender(threading.Thread, metaclass=ClientVerifier):
 
     def __init__(self, user_name, client_socket):
         self.user_name = user_name
@@ -49,7 +50,7 @@ class ClientSender(threading.Thread):
         CLIENT_LOGGER.debug(f'Сформировано EXIT сообщение:\n{msg}')
         return msg
 
-    @Log()
+    #@Log() todo: разобраться, как disassembling с Log подружить
     def run(self):
         while True:
             try:
@@ -65,7 +66,7 @@ class ClientSender(threading.Thread):
                 sys.exit(1)
 
 
-class ClientReceiver(threading.Thread):
+class ClientReceiver(threading.Thread, metaclass=ClientVerifier):
     
     def __init__(self, user_name, client_socket):
         self.user_name = user_name
@@ -73,7 +74,7 @@ class ClientReceiver(threading.Thread):
         super(ClientReceiver, self).__init__()
         CLIENT_LOGGER.debug(f'Получатель клиент {self.user_name} запущен!')
     
-    @Log()
+    #@Log() todo: разобраться, как disassembling с Log подружить
     def run(self):
         while True:
             try:

@@ -2,19 +2,23 @@
 import argparse
 import time
 from select import select
-from socket import *
+from socket import socket, AF_INET, SOCK_STREAM
 import sys
 
 from include import protocol
 from include.decorators import log
+from include.descriptors import Port, IpAddress
 from include.utils import get_message, send_message
 from include.variables import *
 from log_configs.server_log_config import get_logger
+from metaclasses import ServerVerifier
 
 SERVER_LOGGER = get_logger()
 
 
-class Server:
+class Server(metaclass=ServerVerifier):
+    port = Port()
+    ip = IpAddress()
 
     def __init__(self, listen_ip, listen_port, timeout=0.1):
         self.ip = listen_ip
@@ -36,7 +40,7 @@ class Server:
             SERVER_LOGGER.critical(e)
             sys.exit(1)
         else:
-            SERVER_LOGGER.info(f'Запущен сервер на порту: {self.port}')
+            SERVER_LOGGER.info(f'Запущен сервер на порту: {self.port} {self.ip if self.ip else "ANY"}')
             print(f'Запущен сервер на порту: {self.port}!')
 
     def main_run(self):
