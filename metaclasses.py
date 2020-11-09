@@ -91,10 +91,10 @@ class ClientVerifier(type):
                     if i.opname == 'LOAD_GLOBAL':
                         global_names.append(i.argval)
         global_names = set(global_names)
-
+        print(global_names)
         verify_errors += check_disallowed(dis_methods, global_names, name, CLIENT_LOGGER)
 
-        if not ('send_message' in global_names and 'get_message' in global_names):
+        if 'send_message' not in global_names and 'get_message' not in global_names:
             CLIENT_LOGGER.error(f'send_message и get_message отсутствуют в {name} классе!'
                                 'Некорректная реализация работы с сокетом!')
             verify_errors += 1
