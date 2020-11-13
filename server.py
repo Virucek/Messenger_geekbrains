@@ -1,10 +1,13 @@
 """ Серверный скрипт """
 import argparse
+import threading
 import time
 from select import select
 from socket import socket, AF_INET, SOCK_STREAM
 import sys
 
+import tabulate
+import server_database
 from include import protocol
 from include.decorators import log
 from include.descriptors import Port, IpAddress
@@ -16,13 +19,16 @@ from metaclasses import ServerVerifier
 SERVER_LOGGER = get_logger()
 
 
-class Server(metaclass=ServerVerifier):
+class Server(threading.Thread, metaclass=ServerVerifier):
     port = Port()
     ip = IpAddress()
 
-    def __init__(self, listen_ip, listen_port, timeout=0.1):
+    def __init__(self, listen_ip, listen_port, database, timeout=0.1):
         self.ip = listen_ip
         self.port = listen_port
+
+        self.database = database
+
         self.timeout = timeout
 
         self.socket = socket(AF_INET, SOCK_STREAM)
@@ -30,6 +36,7 @@ class Server(metaclass=ServerVerifier):
         self.clients = []
         self.messages = []
         self.client_names = {}
+        super().__init__()
 
     def init_socket(self):
         try:
@@ -43,7 +50,7 @@ class Server(metaclass=ServerVerifier):
             SERVER_LOGGER.info(f'Запущен сервер на порту: {self.port} {self.ip if self.ip else "ANY"}')
             print(f'Запущен сервер на порту: {self.port}!')
 
-    def main_run(self):
+    def run(self):
         self.init_socket()
         while True:
             try:
@@ -93,7 +100,7 @@ class Server(metaclass=ServerVerifier):
                 self.messages.clear()
 
     @log
-    def process_message(self, msg, conn_socks):
+    def process_message(self, msg, conn_socks, add_contact=1):
         msg_body = msg[1]
         if TO in msg_body:
             if msg_body[TO] in self.client_names:
@@ -101,6 +108,9 @@ class Server(metaclass=ServerVerifier):
                     try:
                         send_message(self.client_names[msg_body[TO]], msg_body)
                         SERVER_LOGGER.debug(f'Сообщение {msg_body} было успешно отправлено юзеру {msg_body[TO]}')
+                        if add_contact:
+                            self.database.add_user_contact(msg_body[FROM], msg_body[TO])
+                            self.database.add_user_contact(msg_body[TO], msg_body[FROM])
                         return
                     except Exception:
                         SERVER_LOGGER.error(f'Клиент отключился')
@@ -108,6 +118,7 @@ class Server(metaclass=ServerVerifier):
                 else:
                     SERVER_LOGGER.error(f'Соединение с {self.client_names[msg_body[TO]].getpeername()} разорвано!')
                     self.clients.remove(self.client_names[msg_body[TO]])
+                    self.database.user_logout(msg_body[TO])
                     del self.client_names[msg_body[TO]]
             else:
                 SERVER_LOGGER.error(f'пользователь {msg_body[TO]} не зарегистрирован в чате')
@@ -117,7 +128,7 @@ class Server(metaclass=ServerVerifier):
                 if msg[1][FROM] == name:
                     continue
                 msg[1][TO] = name
-                self.process_message(msg, conn_socks)
+                self.process_message(msg, conn_socks, add_contact=0)
             return
 
     @log
@@ -148,10 +159,14 @@ class Server(metaclass=ServerVerifier):
                     self.clients.remove(client)
                     client.close()
                     return
+
                 SERVER_LOGGER.debug(f'Ответ на {PRESENCE} корректный')
                 self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
                 self.client_names[msg[USER][ACCOUNT_NAME]] = client
+                cli_ip, cli_port = client.getpeername()
+                self.database.user_login(msg[USER][ACCOUNT_NAME], cli_ip, cli_port)
                 return RESPCODE_OK
+
             elif msg[ACTION] == MSG:
                 if msg.keys() != protocol.CHAT_MSG_CLIENT.keys():
                     if msg.keys() != protocol.CHAT_USER_MSG_CLIENT.keys():
@@ -164,6 +179,7 @@ class Server(metaclass=ServerVerifier):
             elif msg[ACTION] == EXIT:
                 SERVER_LOGGER.debug(f'Клиент {msg[FROM]} покинул чатик')
                 self.messages.append(('', create_logout_message(msg[FROM])))
+                self.database.user_logout(msg[FROM])
                 del self.client_names[msg[FROM]]
                 return
             SERVER_LOGGER.error(f'Такое значение {ACTION} {msg[ACTION]} не поддерживается!')
@@ -207,6 +223,18 @@ def create_logout_message(user_name):
     return logout_msg
 
 
+def print_help():
+    command_dict = [
+        (EXIT, 'выход из приложения'),
+        (USERS, 'вывести список всех пользователей'),
+        (ACTIVE, 'вывести список пользователей онлайн'),
+        (HISTORY, 'запросить историю входа пользователей'),
+        (HELP, 'запросить справку по командам'),
+    ]
+
+    print(tabulate.tabulate(command_dict, headers=['Команда', 'Функция']))
+
+
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('-a', action='store', dest='ip', default='', help='host ip of server')
@@ -215,8 +243,40 @@ def main():
 
     args = parser.parse_args()
 
-    server = Server(args.ip, args.port)
-    server.main_run()
+    database = server_database.ServerStorage()
+
+    server = Server(args.ip, args.port, database=database)
+    server.daemon = True
+    server.start()
+
+    print_help()
+    # Основной цикл сервера:
+    while True:
+        command = input('Введите комманду: ').lower()
+        if command == HELP:
+            print_help()
+        elif command == EXIT:
+            break
+        elif command == USERS:
+            print(f'Список всех пользователей')
+            for user in database.users_list():
+                print(f'{user.id}: {user.name}')
+        elif command == ACTIVE:
+            print(f'Список активных пользователей')
+            for user in database.active_users_list():
+                print(f'Пользователь {user[0]}, адрес:порт - {user[1]}:{user[2]}, время входа: {user[3]}')
+        elif command == HISTORY:
+            name = input('Введите имя пользователя для вывода его истории входа или оставьте строку пустой для вывода '
+                         'всех: ')
+            for user in database.login_history(name):
+                if user[2]:
+                    print(f'Пользователь: {user[0]}, время входа: {user[1]}, время выхода: {user[2]}. '
+                          f'Адрес:порт - {user[3]}:{user[4]}')
+                else:
+                    print(f'Пользователь: {user[0]}, время входа: {user[1]}. '
+                          f'Адрес:порт - {user[3]}:{user[4]}')
+        else:
+            print(f'Команда не верна, чтобы посмотреть список поддерживаемых команд - введите {HELP}')
 
 
 if __name__ == '__main__':
