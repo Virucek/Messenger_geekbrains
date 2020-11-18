@@ -12,6 +12,9 @@ ENCODING = 'utf-8'
 # Default log level
 LOG_LEVEL = 'DEBUG'
 
+#supporting variables
+EXIT_F = 'q!'
+
 
 # JMI protocol fields
 ACTION = 'action'
@@ -31,7 +34,10 @@ AUTHENTICATE = 'authenticate'
 JOIN = 'join'
 LEAVE = 'leave'
 
+EXIT = 'exit'
+
 FROM = 'from'
+TO = 'to'
 MESSAGE = 'message'
 
 RESPONSE = 'response'
