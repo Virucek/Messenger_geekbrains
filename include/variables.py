@@ -11,6 +11,15 @@ MAX_PACKAGE_SIZE = 2048
 ENCODING = 'utf-8'
 # Default log level
 LOG_LEVEL = 'DEBUG'
+# Server Database
+SERVER_DATABASE = 'sqlite:///server.db3'
+
+# Supporting server commands
+HELP = 'help'
+EXIT = 'exit'
+USERS = 'users'
+ACTIVE = 'active'
+HISTORY = 'history'
 
 #supporting variables
 EXIT_F = 'q!'
