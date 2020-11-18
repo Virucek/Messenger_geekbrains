@@ -1,9 +1,11 @@
 """ Хранилище вспомогательных общих функций """
 import json
 
+from include.decorators import log, Log
 from include.variables import MAX_PACKAGE_SIZE, ENCODING
 
 
+@log
 def get_message(client_socket):
     encoded_msg = client_socket.recv(MAX_PACKAGE_SIZE)
     if isinstance(encoded_msg, bytes):
@@ -15,6 +17,7 @@ def get_message(client_socket):
     raise ValueError
 
 
+@Log()
 def send_message(socket, message):
     if isinstance(message, dict):
         json_msg = json.dumps(message)
