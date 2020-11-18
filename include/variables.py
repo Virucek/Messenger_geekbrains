@@ -21,9 +21,12 @@ USERS = 'users'
 ACTIVE = 'active'
 HISTORY = 'history'
 
-#supporting variables
-EXIT_F = 'q!'
-
+# supporting variables
+EXIT_F = '!quit'
+GET_CONTACTS_F = '!contacts'
+ADD_CONTACT_F = '!add'
+REMOVE_CONTACT_F = '!del'
+HELP_F = '!help'
 
 # JMI protocol fields
 ACTION = 'action'
@@ -32,6 +35,8 @@ TYPE = 'type'
 USER = 'user'
 ACCOUNT_NAME = 'account_name'
 STATUS = 'status'
+USER_LOGIN = 'user_login'
+USER_ID = 'user_id'
 
 NOT_LOGGED_USER = 'Anonymous'
 # Actions
@@ -42,6 +47,9 @@ QUIT = 'quit'
 AUTHENTICATE = 'authenticate'
 JOIN = 'join'
 LEAVE = 'leave'
+GET_CONTACTS = 'get_contacts'
+ADD_CONTACT = 'add_contact'
+REMOVE_CONTACT = 'del_contact'
 
 EXIT = 'exit'
 
@@ -54,6 +62,8 @@ ALERT = 'alert'
 
 RESPCODE_OK = 200
 RESPONSE_OK_TEXT = 'OK'
+
+RESPCODE_ACCEPTED = 202
 
 RESPCODE_BAD_REQ = 400
 RESPONSE_BAD_REQUEST_TEXT = 'Bad Request'

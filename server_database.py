@@ -152,6 +152,7 @@ class ServerStorage:
             query = query.filter(self.Users.name == user_name)
         return query.all()
 
+    @Log()
     def add_user_contact(self, owner_name, user_name):
         try:
             owner = self.session.query(self.Users).filter_by(name=owner_name).first()
@@ -162,24 +163,47 @@ class ServerStorage:
         except IntegrityError:
             self.session.rollback()
 
-    def user_contact_list(self, owner_name):
-        owner = self.session.query(self.Users).filter_by(name=owner_name).first()
-        contacts = self.session.query(self.UserContacts.owner, self.UserContacts.user).filter_by(owner=owner.id).all()
+    @Log()
+    def remove_user_contact(self, owner_name, user_name):
+        try:
+            owner = self.session.query(self.Users).filter_by(name=owner_name).first()
+            user_contact = self.session.query(self.Users).filter_by(name=user_name).first()
+            contact_record = self.session.query(self.UserContacts).filter_by(owner=owner.id, user=user_contact.id).first()
+            if contact_record:
+                SERVER_LOGGER.debug('Запись в UserContacts найдена')
+            else:
+                SERVER_LOGGER.debug('Запись в UserContacts ненайдена!')
+            self.session.delete(contact_record)
+            self.session.commit()
+        except IntegrityError as err:
+            SERVER_LOGGER.error(f'Удаление не удалось, выполняется rollback. \n{err}')
+            self.session.rollback()
+        except Exception as err:
+            SERVER_LOGGER.error(f'Проблемы при удалении контакта:\n{err}')
 
-        return contacts
+    @Log()
+    def get_user_contact_list(self, owner_name):
+        owner = self.session.query(self.Users).filter_by(name=owner_name).first()
+        contacts = self.session.query(self.UserContacts.user, self.Users.name).\
+            filter_by(owner=owner.id).\
+            join(self.Users, self.UserContacts.user == self.Users.id).all()
+
+        return [contact[1] for contact in contacts]
 
 
 if __name__ == '__main__':
     test_db = ServerStorage()
     test_db.user_login('user_1', '192.168.10.20', 9876)
     test_db.user_login('user_2', '192.168.11.33', 7890)
+    test_db.user_login('user_3', '192.168.11.33', 7891)
 
     print(test_db.active_users_list())
     print(test_db.login_history())
 
     test_db.add_user_contact('user_2', 'user_1')
+    test_db.add_user_contact('user_2', 'user_3')
 
-    print(f'contact_list - {test_db.user_contact_list("user_2")}')
+    print(f'contact_list - {test_db.get_user_contact_list("user_2")}')
 
     test_db.user_logout('user_1')
 

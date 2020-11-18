@@ -83,12 +83,13 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                             SERVER_LOGGER.info('Отправлен ответ:'
                                                f'{resp_msg}')
                             send_message(client, resp_msg)
+
                     except ValueError:
                         _error = 'Ошибка декодирования сообщения от клиента'
                         SERVER_LOGGER.error(_error)
                         send_message(client, create_response(RESPCODE_SERVER_ERROR, _error))
                     except:
-                        SERVER_LOGGER.error(f'Клиент {client.getpeername()} отключился')
+                        SERVER_LOGGER.error(f'Клиент {client.getpeername()} отключился!')
                         self.clients.remove(client)
 
             if send_data_lst and self.messages:
@@ -176,6 +177,32 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                 SERVER_LOGGER.debug(f'Сообщение {MSG} корректное')
                 self.messages.append((msg[FROM], msg))
                 return
+
+            elif msg[ACTION] == GET_CONTACTS:
+                if msg.keys() != protocol.GET_USER_CONTACTS_MSG.keys():
+                    SERVER_LOGGER.error('В запросе присутствуют лишние поля или отсутствуют нужные!')
+                    return RESPCODE_BAD_REQ
+                SERVER_LOGGER.debug(f'Сообщение {GET_CONTACTS} корректное')
+                contacts = self.database.get_user_contact_list(msg[USER_LOGIN])
+                send_message(client, create_contacts_message(contacts))
+                return
+
+            elif msg[ACTION] == ADD_CONTACT:
+                if msg.keys() != protocol.ADD_USER_CONTACT_MSG.keys():
+                    SERVER_LOGGER.error('В запросе присутствуют лишние поля или отсутствуют нужные!')
+                    return RESPCODE_BAD_REQ
+                self.database.add_user_contact(msg[USER_LOGIN], msg[USER_ID])
+                SERVER_LOGGER.debug(f'Сообщение {ADD_CONTACT} корректное')
+                return RESPCODE_OK
+
+            elif msg[ACTION] == REMOVE_CONTACT:
+                if msg.keys() != protocol.REMOVE_USER_CONTACT_MSG.keys():
+                    SERVER_LOGGER.error('В запросе присутствуют лишние поля или отсутствуют нужные!')
+                    return RESPCODE_BAD_REQ
+                self.database.remove_user_contact(msg[USER_LOGIN], msg[USER_ID])
+                SERVER_LOGGER.debug(f'Сообщение {REMOVE_CONTACT} корректное')
+                return RESPCODE_OK
+
             elif msg[ACTION] == EXIT:
                 SERVER_LOGGER.debug(f'Клиент {msg[FROM]} покинул чатик')
                 self.messages.append(('', create_logout_message(msg[FROM])))
@@ -221,6 +248,13 @@ def create_logout_message(user_name):
     logout_msg[FROM] = 'system'
     logout_msg[MESSAGE] = f'{user_name} уходит из чатика!'
     return logout_msg
+
+
+@log
+def create_contacts_message(contacts):
+    contacts_msg = protocol.RESPONSE_USER_CONTACTS_MSG.copy()
+    contacts_msg[ALERT] = contacts
+    return contacts_msg
 
 
 def print_help():

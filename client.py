@@ -27,12 +27,28 @@ class ClientSender(threading.Thread, metaclass=ClientVerifier):
     def create_message(self):
         time.sleep(0.5)
         user_to = input(
-            f'Кому хотите отправить (оставьте пустым, чтобы отправить всем, введите {EXIT_F}, чтобы выйти): ')
+            f'Кому хотите отправить ({HELP_F} для команд): ')
         if user_to == EXIT_F:
             return EXIT_F
-        message = input(f'Сообщение ({EXIT_F}, чтобы выйти):')
+        elif user_to == ADD_CONTACT_F:
+            return ADD_CONTACT_F
+        elif user_to == REMOVE_CONTACT_F:
+            return REMOVE_CONTACT_F
+        elif user_to == GET_CONTACTS_F:
+            return GET_CONTACTS_F
+        elif user_to == HELP_F:
+            return HELP_F
+        message = input(f'Сообщение ({HELP_F} для команд):')
         if message == EXIT_F:
             return EXIT_F
+        elif message == ADD_CONTACT_F:
+            return ADD_CONTACT_F
+        elif message == REMOVE_CONTACT_F:
+            return REMOVE_CONTACT_F
+        elif user_to == GET_CONTACTS_F:
+            return GET_CONTACTS_F
+        elif message == HELP_F:
+            return HELP_F
         message_full = protocol.CHAT_MSG_CLIENT.copy()
         message_full[TIME] = time.time()
         message_full[FROM] = self.user_name
@@ -50,6 +66,24 @@ class ClientSender(threading.Thread, metaclass=ClientVerifier):
         CLIENT_LOGGER.debug(f'Сформировано EXIT сообщение:\n{msg}')
         return msg
 
+    @Log()
+    def create_add_contact_msg(self, user_contact):
+        msg = protocol.ADD_USER_CONTACT_MSG.copy()
+        msg[USER_ID] = user_contact
+        msg[TIME] = time.time()
+        msg[USER_LOGIN] = self.user_name
+        CLIENT_LOGGER.debug(f'Сформировано {ADD_CONTACT} сообщение:\n{msg}')
+        return msg
+
+    @Log()
+    def create_remove_contact_msg(self, user_contact):
+        msg = protocol.REMOVE_USER_CONTACT_MSG.copy()
+        msg[USER_ID] = user_contact
+        msg[TIME] = time.time()
+        msg[USER_LOGIN] = self.user_name
+        CLIENT_LOGGER.debug(f'Сформировано {REMOVE_CONTACT} сообщение:\n{msg}')
+        return msg
+
     #@Log() todo: разобраться, как disassembling с Log подружить
     def run(self):
         while True:
@@ -60,6 +94,17 @@ class ClientSender(threading.Thread, metaclass=ClientVerifier):
                     send_message(self.socket, self.create_exit_message())
                     time.sleep(2)
                     break
+                elif message == HELP_F:
+                    show_help()
+                    continue
+                elif message == ADD_CONTACT_F:
+                    user_contact = input("Введите имя пользователя для добавления в список контактов: ")
+                    message = self.create_add_contact_msg(user_contact)
+                elif message == REMOVE_CONTACT_F:
+                    user_contact = input("Введите имя пользователя, кого хотите удалить из контактов: ")
+                    message = self.create_remove_contact_msg(user_contact)
+                elif message == GET_CONTACTS_F:
+                    pass # todo: добавить получение списка контактов из базы клиента
                 send_message(self.socket, message)
             except:
                 CLIENT_LOGGER.error(f'соединение с сервером разорвано')
@@ -88,7 +133,10 @@ class ClientReceiver(threading.Thread, metaclass=ClientVerifier):
 def process_incoming_message(message):
     if RESPONSE in message:
         if message[RESPONSE] == RESPCODE_OK:
-            CLIENT_LOGGER.debug('Полученное сообщение ОК')
+            CLIENT_LOGGER.debug(f'Полученный ответ от сервера: {message[RESPONSE]}')
+            return True
+        elif message[RESPONSE] == RESPCODE_ACCEPTED:
+            CLIENT_LOGGER.debug(f'Полученный ответ от сервера: {message[RESPONSE]}')
             return True
         CLIENT_LOGGER.debug('Сервер ответил ошибкой')
         if ALERT in message:
@@ -110,6 +158,22 @@ def create_presence(user_name=NOT_LOGGED_USER):
     msg[USER][STATUS] = 'Presense status test?'
     CLIENT_LOGGER.debug(f'Сформировано {PRESENCE} сообщение:\n{msg}')
     return msg
+
+
+@Log()
+def get_contacts_msg(user_name=NOT_LOGGED_USER):
+    msg = protocol.GET_USER_CONTACTS_MSG
+    msg[TIME] = time.time()
+    msg[USER_LOGIN] = user_name
+    CLIENT_LOGGER.debug(f'Сформировано {GET_CONTACTS} сообщение:\n{msg}')
+    return msg
+
+
+def show_help():
+    print(f'Чтобы отправить сообщение всем пользователям - поле получателя оставьте пустым\n'
+          f'Чтобы добавить пользователя в список контактов - введите {ADD_CONTACT_F}\n'
+          f'Чтобы убрать пользователя из списка контактов - введите {REMOVE_CONTACT_F}\n'
+          f'Чтобы выйти из чата - введите {EXIT_F}')
 
 
 def main():
@@ -144,7 +208,16 @@ def main():
             sys.exit(1)
 
         send_message(client_sock, create_presence(user_name))
-        CLIENT_LOGGER.info(f'Отправлено сообщение')
+        CLIENT_LOGGER.info(f'Отправлено presence сообщение')
+        try:
+            answer = get_message(client_sock)
+            CLIENT_LOGGER.info(f'Получено сообщение от сервера: {answer}')
+            process_incoming_message(answer)
+        except ValueError:
+            CLIENT_LOGGER.error('Ошибка декодирования сообщения от сервера')
+
+        send_message(client_sock, get_contacts_msg(user_name))
+        CLIENT_LOGGER.info(f'Отправлено get_contacts сообщение')
         try:
             answer = get_message(client_sock)
             CLIENT_LOGGER.info(f'Получено сообщение от сервера: {answer}')
