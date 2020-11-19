@@ -109,6 +109,7 @@ class ServerStorage:
     @Log()
     def user_login(self, user_name, ip_address, port):
         try:
+            login_date = datetime.now()
             user_id = self.session.query(self.Users).filter_by(name=user_name)
 
             if not user_id.count():
@@ -119,8 +120,7 @@ class ServerStorage:
                 self.session.add(user_stat)
             else:
                 user = user_id.first()
-
-            login_date = datetime.now()
+                user.last_login = login_date
 
             act_user_id = self.ActiveUsers(user.id, ip_address, port, login_date)
             self.session.add(act_user_id)
