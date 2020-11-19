@@ -14,6 +14,7 @@ LOG_LEVEL = 'DEBUG'
 # Server Database
 SERVER_DATABASE = 'sqlite:///server.db3'
 
+
 # Supporting server commands
 HELP = 'help'
 EXIT = 'exit'
@@ -21,9 +22,16 @@ USERS = 'users'
 ACTIVE = 'active'
 HISTORY = 'history'
 
-#supporting variables
-EXIT_F = 'q!'
+# supporting variables
+EXIT_F = '!quit'
+GET_CONTACTS_F = '!contacts'
+ADD_CONTACT_F = '!add'
+REMOVE_CONTACT_F = '!del'
+HELP_F = '!help'
+GET_USERS_F = '!users'
+REFRESH_F = '!refresh'
 
+CLIENT_COMMANDS = (EXIT_F, GET_CONTACTS_F, ADD_CONTACT_F, REMOVE_CONTACT_F, HELP_F, GET_USERS_F, REFRESH_F)
 
 # JMI protocol fields
 ACTION = 'action'
@@ -32,6 +40,8 @@ TYPE = 'type'
 USER = 'user'
 ACCOUNT_NAME = 'account_name'
 STATUS = 'status'
+USER_LOGIN = 'user_login'
+USER_ID = 'user_id'
 
 NOT_LOGGED_USER = 'Anonymous'
 # Actions
@@ -42,6 +52,11 @@ QUIT = 'quit'
 AUTHENTICATE = 'authenticate'
 JOIN = 'join'
 LEAVE = 'leave'
+GET_CONTACTS = 'get_contacts'
+ADD_CONTACT = 'add_contact'
+REMOVE_CONTACT = 'del_contact'
+GET_USERS = 'get_users'
+
 
 EXIT = 'exit'
 
@@ -54,6 +69,8 @@ ALERT = 'alert'
 
 RESPCODE_OK = 200
 RESPONSE_OK_TEXT = 'OK'
+
+RESPCODE_ACCEPTED = 202
 
 RESPCODE_BAD_REQ = 400
 RESPONSE_BAD_REQUEST_TEXT = 'Bad Request'

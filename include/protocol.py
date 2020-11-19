@@ -44,11 +44,44 @@ CHAT_USER_MSG_CLIENT = {
     MESSAGE: None
 }
 
-
-
 # Шаблон сообщения выхода из чата
 EXIT_MSG_CLIENT = {
     ACTION: EXIT,
     TIME: None,
     FROM: None
+}
+
+
+# Шаблон запроса списка контактов
+GET_USER_CONTACTS_MSG = {
+    ACTION: GET_CONTACTS,
+    TIME: None,
+    USER_LOGIN: None
+}
+
+# Шаблон успешного ответа на get запрос (202)
+RESPONSE_USERS_CONTACTS_MSG = {
+    RESPONSE: RESPCODE_ACCEPTED,
+    ALERT: None,
+}
+
+ADD_USER_CONTACT_MSG = {
+    ACTION: ADD_CONTACT,
+    USER_ID: None,
+    TIME: None,
+    USER_LOGIN: None,
+}
+
+REMOVE_USER_CONTACT_MSG = {
+    ACTION: REMOVE_CONTACT,
+    USER_ID: None,
+    TIME: None,
+    USER_LOGIN: None,
+}
+
+# Шаблон запроса списка пользователей
+GET_USERS_MSG = {
+    ACTION: GET_USERS,
+    TIME: None,
+    USER_LOGIN: None
 }
