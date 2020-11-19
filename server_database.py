@@ -127,8 +127,9 @@ class ServerStorage:
 
     @Log()
     def users_list(self):
-        users = self.session.query(self.Users.id, self.Users.name).all()
-        return users
+        # users = self.session.query(self.Users.id, self.Users.name).all()
+        # return users
+        return [user[0] for user in self.session.query(self.Users.name).all()]
 
     @Log()
     def active_users_list(self):

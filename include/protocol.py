@@ -59,8 +59,8 @@ GET_USER_CONTACTS_MSG = {
     USER_LOGIN: None
 }
 
-# Шаблон успешного овтета на get запрос (202)
-RESPONSE_USER_CONTACTS_MSG = {
+# Шаблон успешного ответа на get запрос (202)
+RESPONSE_USERS_CONTACTS_MSG = {
     RESPONSE: RESPCODE_ACCEPTED,
     ALERT: None,
 }

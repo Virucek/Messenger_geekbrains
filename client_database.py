@@ -58,12 +58,10 @@ class ClientStorage:
         self.session = session()
 
     def get_known_users(self):
-        users = self.session.query(self.KnownUsers.name).all()
-
-        return users
+        return [user[0] for user in self.session.query(self.KnownUsers.name).all()]
 
     def get_contacts(self):
-        return [contact for contact in self.session.query(self.Contacts.name).all()]
+        return [contact[0] for contact in self.session.query(self.Contacts.name).all()]
 
     @Log()
     def load_known_users(self, new_users):

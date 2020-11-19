@@ -113,10 +113,10 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                             self.database.add_user_contact(msg_body[FROM], msg_body[TO])
                             self.database.add_user_contact(msg_body[TO], msg_body[FROM])
                         return
-                    except Exception:
+                    except Exception: # todo: При внезапном разрыве соединения, новым клиентам не удается подключиться
                         SERVER_LOGGER.error(f'Клиент отключился')
                         del self.client_names[msg_body[TO]]
-                else:
+                else: # todo: При внезапном разрыве соединения, новым клиентам не удается подключиться и не чистится имя
                     SERVER_LOGGER.error(f'Соединение с {self.client_names[msg_body[TO]].getpeername()} разорвано!')
                     self.clients.remove(self.client_names[msg_body[TO]])
                     self.database.user_logout(msg_body[TO])
@@ -178,13 +178,22 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                 self.messages.append((msg[FROM], msg))
                 return
 
+            elif msg[ACTION] == GET_USERS:
+                if msg.keys() != protocol.GET_USERS_MSG.keys():
+                    SERVER_LOGGER.error('В запросе присутствуют лишние поля или отсутствуют нужные!')
+                    return RESPCODE_BAD_REQ
+                SERVER_LOGGER.debug(f'Сообщение {GET_USERS} корректное')
+                users = self.database.users_list()
+                send_message(client, create_users_contacts_message(users))
+                return
+
             elif msg[ACTION] == GET_CONTACTS:
                 if msg.keys() != protocol.GET_USER_CONTACTS_MSG.keys():
                     SERVER_LOGGER.error('В запросе присутствуют лишние поля или отсутствуют нужные!')
                     return RESPCODE_BAD_REQ
                 SERVER_LOGGER.debug(f'Сообщение {GET_CONTACTS} корректное')
                 contacts = self.database.get_user_contact_list(msg[USER_LOGIN])
-                send_message(client, create_contacts_message(contacts))
+                send_message(client, create_users_contacts_message(contacts))
                 return
 
             elif msg[ACTION] == ADD_CONTACT:
@@ -251,10 +260,10 @@ def create_logout_message(user_name):
 
 
 @log
-def create_contacts_message(contacts):
-    contacts_msg = protocol.RESPONSE_USER_CONTACTS_MSG.copy()
-    contacts_msg[ALERT] = contacts
-    return contacts_msg
+def create_users_contacts_message(users):
+    users_contacts_msg = protocol.RESPONSE_USERS_CONTACTS_MSG.copy()
+    users_contacts_msg[ALERT] = users
+    return users_contacts_msg
 
 
 def print_help():

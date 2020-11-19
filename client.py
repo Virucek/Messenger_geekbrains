@@ -105,13 +105,13 @@ class ClientSender(threading.Thread, metaclass=ClientVerifier):
                 elif message == GET_USERS_F:
                     print([contact for contact in self.database.get_known_users()])
                     continue
-                elif message == REFRESH_F:
-                    load_database(self.socket, self.database, self.user_name)
-                    print("База контактов и пользователей успешно обновлена!")
-                    CLIENT_LOGGER.debug("База контактов и пользователей успешно обновлена!")
-                    continue
+                # elif message == REFRESH_F: todo: реализовать обноввление списка пользователей по требованию
+                #     load_database(self.socket, self.database, self.user_name)
+                #     print("База контактов и пользователей успешно обновлена!")
+                #     CLIENT_LOGGER.debug("База контактов и пользователей успешно обновлена!")
+                #     continue
                 else:
-                    if message[TO]:
+                    if TO in message:
                         self.database.save_outgoing_message(message[TO], message[MESSAGE])
                 send_message(self.socket, message)
             except:
@@ -156,7 +156,8 @@ def process_incoming_message(message, database=None):
         raise ServerError(f'Некорректный ответ от сервера:\n{message}')
     elif ACTION in message:
         if message[ACTION] == MSG and MESSAGE in message:
-            database.save_incoming_message(message[FROM], message[MESSAGE])
+            if database:
+                database.save_incoming_message(message[FROM], message[MESSAGE])
             print(f'\n{message[FROM]} > {message[MESSAGE]}')
             return True
     raise ValueError
@@ -194,9 +195,12 @@ def show_help():
     print(f'Чтобы отправить сообщение всем пользователям - поле получателя оставьте пустым\n'
           f'Чтобы добавить пользователя в список контактов - введите {ADD_CONTACT_F}\n'
           f'Чтобы убрать пользователя из списка контактов - введите {REMOVE_CONTACT_F}\n'
+          f'Чтобы вывести список контактов - введите {GET_CONTACTS_F}\n'
+          f'Чтобы вывести список всех известных пользователей - введите {GET_USERS_F}\n'
           f'Чтобы выйти из чата - введите {EXIT_F}')
 
 
+@Log()
 def get_response_safe(client_socket):
     try:
         answer = get_message(client_socket)
@@ -259,6 +263,7 @@ def main():
         send_message(client_sock, create_presence(user_name))
         CLIENT_LOGGER.info(f'Отправлено presence сообщение')
         if get_response_safe(client_sock) is not False:
+            get_response_safe(client_sock)
             db_url = f'sqlite:///client_{user_name}.db3'
             database = ClientStorage(db_url)
             load_database(client_sock, database, user_name)
