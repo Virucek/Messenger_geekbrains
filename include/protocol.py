@@ -78,3 +78,10 @@ REMOVE_USER_CONTACT_MSG = {
     TIME: None,
     USER_LOGIN: None,
 }
+
+# Шаблон запроса списка пользователей
+GET_USERS_MSG = {
+    ACTION: GET_USERS,
+    TIME: None,
+    USER_LOGIN: None
+}
