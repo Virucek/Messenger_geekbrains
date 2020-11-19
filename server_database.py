@@ -18,6 +18,7 @@ class ServerStorage:
         def __init__(self, user_name):
             self.id = None
             self.name = user_name
+            self.last_login = datetime.now()
 
     class ActiveUsers:
         def __init__(self, user_id, ip_address, port, login_datetime):
@@ -44,15 +45,23 @@ class ServerStorage:
             self.owner = owner_id
             self.user = user_id
 
-    def __init__(self):
-        self.database_engine = create_engine(SERVER_DATABASE, echo=False, pool_recycle=3600,
+    class UserStats:
+        def __init__(self, user_id):
+            self.id = None
+            self.user = user_id
+            self.sent = 0
+            self.accepted = 0
+
+    def __init__(self, database_file=SERVER_DATABASE):
+        self.database_engine = create_engine(database_file, echo=False, pool_recycle=3600,
                                              connect_args={"check_same_thread": False})
 
         self.metadata = MetaData()
 
         users_table = Table('users', self.metadata,
                             Column('id', Integer, primary_key=True),
-                            Column('name', String))
+                            Column('name', String),
+                            Column('last_login', DateTime))
 
         active_users_table = Table('active_users', self.metadata,
                                    Column('id', Integer, primary_key=True),
@@ -76,12 +85,20 @@ class ServerStorage:
                                     UniqueConstraint('owner', 'user', name='owner_user')
                                     )
 
+        user_stats_table = Table('user_stats', self.metadata,
+                                 Column('id', Integer, primary_key=True),
+                                 Column('user', ForeignKey('users.id')),
+                                 Column('sent', Integer),
+                                 Column('accepted', Integer),
+                                 )
+
         self.metadata.create_all(bind=self.database_engine)
 
         mapper(self.Users, users_table)
         mapper(self.ActiveUsers, active_users_table)
         mapper(self.LoginHistory, login_history_table)
         mapper(self.UserContacts, user_contacts_table)
+        mapper(self.UserStats, user_stats_table)
 
         session = sessionmaker(bind=self.database_engine)
         self.session = session()
@@ -98,6 +115,8 @@ class ServerStorage:
                 user = self.Users(user_name=user_name)
                 self.session.add(user)
                 self.session.commit()
+                user_stat = self.UserStats(user.id)
+                self.session.add(user_stat)
             else:
                 user = user_id.first()
 
@@ -190,6 +209,29 @@ class ServerStorage:
             join(self.Users, self.UserContacts.user == self.Users.id).all()
 
         return [contact[1] for contact in contacts]
+
+    def process_message(self, sender, recipient):
+
+        sender = self.session.query(self.Users).filter_by(name=sender).first()
+        recipient = self.session.query(self.Users).filter_by(name=recipient).first()
+
+        sender_row = self.session.query(self.UserStats).filter_by(user=sender.id).first()
+        sender_row.sent += 1
+        recipient_row = self.session.query(self.UserStats).filter_by(user=recipient.id).first()
+        recipient_row.accepted += 1
+
+        self.session.commit()
+
+    @Log()
+    def get_user_stats(self):
+        query = self.session.query(
+            self.Users.name,
+            self.Users.last_login,
+            self.UserStats.sent,
+            self.UserStats.accepted
+        ).join(self.Users).all()
+        # Возвращаем список кортежей
+        return query
 
 
 if __name__ == '__main__':
