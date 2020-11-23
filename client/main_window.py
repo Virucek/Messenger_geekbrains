@@ -1,9 +1,8 @@
 from PyQt5.QtWidgets import QMainWindow, qApp, QMessageBox, QApplication, QListView
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor
-from PyQt5.QtCore import pyqtSlot, QEvent, Qt
+from PyQt5.QtCore import pyqtSlot, Qt
 import sys
-import json
-import logging
+
 
 sys.path.append('../')
 from client.main_window_conv import Ui_MainClientWindow
@@ -12,9 +11,10 @@ from client.del_contact import DelContactDialog
 from client.database import ClientDatabase
 from client.transport import ClientTransport
 from client.start_dialog import UserNameDialog
-from common.errors import ServerError
+from log_configs.client_log_config import get_logger
+from include.errors import ServerError
 
-logger = logging.getLogger('client')
+CLIENT_LOGGER = get_logger()
 
 
 # Класс основного окна
@@ -51,7 +51,7 @@ class ClientMainWindow(QMainWindow):
         self.ui.list_messages.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.ui.list_messages.setWordWrap(True)
 
-        # Даблклик по листу контактов отправляется в обработчик
+        # Сигнал на двойнок клик по листу контактов
         self.ui.list_contacts.doubleClicked.connect(self.select_active_user)
 
         self.clients_list_update()
@@ -81,19 +81,19 @@ class ClientMainWindow(QMainWindow):
             self.ui.list_messages.setModel(self.history_model)
         # Очистим от старых записей
         self.history_model.clear()
-        # Берём не более 20 последних записей.
+        # Берём не более 30 последних записей.
         length = len(list)
         start_index = 0
-        if length > 20:
-            start_index = length - 20
+        if length > 30:
+            start_index = length - 30
         # Заполнение модели записями, так-же стоит разделить входящие и исходящие выравниванием и разным фоном.
-        # Записи в обратном порядке, поэтому выбираем их с конца и не более 20
+        # Записи в обратном порядке, поэтому выбираем их с конца и не более 30
         for i in range(start_index, length):
             item = list[i]
             if item[1] == 'I':
                 mess = QStandardItem(f'Входящее от {item[3].replace(microsecond=0)}:\n {item[2]}')
                 mess.setEditable(False)
-                mess.setBackground(QBrush(QColor(255, 213, 213)))
+                mess.setBackground(QBrush(QColor(213, 213, 240)))
                 mess.setTextAlignment(Qt.AlignLeft)
                 self.history_model.appendRow(mess)
             else:
@@ -161,7 +161,7 @@ class ClientMainWindow(QMainWindow):
             new_contact = QStandardItem(new_contact)
             new_contact.setEditable(False)
             self.contacts_model.appendRow(new_contact)
-            logger.info(f'Успешно добавлен контакт {new_contact}')
+            CLIENT_LOGGER.info(f'Успешно добавлен контакт {new_contact}')
             self.messages.information(self, 'Успех', 'Контакт успешно добавлен.')
 
     # Функция удаления контакта
@@ -186,7 +186,7 @@ class ClientMainWindow(QMainWindow):
         else:
             self.database.remove_contact(selected)
             self.clients_list_update()
-            logger.info(f'Успешно удалён контакт {selected}')
+            CLIENT_LOGGER.info(f'Успешно удалён контакт {selected}')
             self.messages.information(self, 'Успех', 'Контакт успешно удалён.')
             item.close()
             # Если удалён активный пользователь, то деактивируем поля ввода.
@@ -216,7 +216,7 @@ class ClientMainWindow(QMainWindow):
             self.close()
         else:
             self.database.save_outgoing_message(self.current_chat, message_text)
-            logger.debug(f'Отправлено сообщение для {self.current_chat}: {message_text}')
+            CLIENT_LOGGER.debug(f'Отправлено сообщение для {self.current_chat}: {message_text}')
             self.history_list_update()
 
     # Слот приёма нового сообщений

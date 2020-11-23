@@ -298,15 +298,17 @@ CLIENT_LOGGER = get_logger()
 
 # Основная функция клиента
 if __name__ == '__main__':
-    # Создаём клиентокое приложение
+    # Создаём клиентcкое приложение
     client_app = QApplication(sys.argv)
 
     server_address = DEFAULT_HOST
     server_port = DEFAULT_PORT
     # Если имя пользователя не было указано в командной строке то запросим его
     start_dialog = UserNameDialog()
+    start_dialog.ip.insert(server_address)
+    start_dialog.port.insert(str(server_port))
     client_app.exec_()
-        # Если пользователь ввёл имя и нажал ОК, то сохраняем ведённое и удаляем объект, инааче выходим
+        # Если пользователь ввёл имя и нажал ОК, то сохраняем ведённое и удаляем объект, иначе выходим
     if start_dialog.ok_pressed:
         user_name = start_dialog.client_name.text()
         del start_dialog
@@ -335,7 +337,7 @@ if __name__ == '__main__':
     main_window.setWindowTitle(f'Чат Alpha Version - пользователь {user_name}')
     client_app.exec_()
 
-    # Раз графическая оболочка закрылась, закрываем транспорт
+    # Раз графическая оболочка закрылась, закрываем клиентский поток
     client_thread.exit_()
     client_thread.join()
 
