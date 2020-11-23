@@ -1,12 +1,11 @@
 import sys
-import logging
 
 sys.path.append('../')
 from PyQt5.QtWidgets import QDialog, QLabel, QComboBox, QPushButton
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QStandardItemModel, QStandardItem
+from log_configs.client_log_config import get_logger
 
-logger = logging.getLogger('client')
+CLIENT_LOGGER = get_logger()
 
 
 # Диалог выбора контакта для добавления
@@ -66,5 +65,5 @@ class AddContactDialog(QDialog):
         except OSError:
             pass
         else:
-            logger.debug('Обновление списка пользователей с сервера выполнено')
+            CLIENT_LOGGER.debug('Обновление списка пользователей с сервера выполнено')
             self.possible_contacts_update()
