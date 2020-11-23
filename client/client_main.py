@@ -7,7 +7,6 @@ import time
 
 from PyQt5.QtCore import QObject, pyqtSignal
 
-from client_database import ClientStorage
 from include import protocol
 from include.decorators import Log
 from include.utils import get_message, send_message
