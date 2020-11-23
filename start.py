@@ -8,12 +8,16 @@ PROCESSES = []
 while True:
     action = input('Выберите действие: \n'
                    'q - выход, \n'
-                   's - запустить сервер и клиенты, \n'
+                   's - запустить сервер, \n'
+                   'c - запустить клиенты, \n'
                    'x - закрыть все процессы\n')
 
     if action == 'q':
         break
     elif action == 's':
+        PROCESSES.append(subprocess.Popen('python server.py',
+                                          creationflags=subprocess.CREATE_NEW_CONSOLE))
+    elif action == 'c':
         client_num = input('Введите количество клиентов ( по умолчанию - 2 ): ')
         if not client_num:
             client_num = CLIENT_PROC_DEF
@@ -23,8 +27,6 @@ while True:
             print('Введите число в следующий раз')
             continue
 
-        PROCESSES.append(subprocess.Popen('python server.py',
-                                          creationflags=subprocess.CREATE_NEW_CONSOLE))
         for i in range(client_num):
             user_name = f'cli_{i}'
             PROCESSES.append(subprocess.Popen(f'python client.py -u {user_name}',

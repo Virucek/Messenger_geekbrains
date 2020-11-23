@@ -1,5 +1,5 @@
 """ Клиентский скрипт """
-
+import argparse
 import sys
 from PyQt5.QtWidgets import QApplication
 
@@ -13,7 +13,15 @@ from log_configs.client_log_config import get_logger
 
 CLIENT_LOGGER = get_logger()
 
-if __name__ == '__main__':
+
+def main():
+    parser = argparse.ArgumentParser()
+
+    # parser.add_argument('host', nargs='?', default=DEFAULT_HOST, help='server host ip address')
+    # parser.add_argument('port', nargs='?', default=DEFAULT_PORT, type=int, help='server port')
+    parser.add_argument('-u', action='store', dest='user_name', help='mode of work')
+
+    args = parser.parse_args()
     # Создание клиентского приложения
     client_app = QApplication(sys.argv)
 
@@ -21,6 +29,8 @@ if __name__ == '__main__':
     server_port = DEFAULT_PORT
 
     start_dialog = UserNameDialog()
+    if args:
+        start_dialog.client_name.insert(args.user_name)
     start_dialog.ip.insert(server_address)
     start_dialog.port.insert(str(server_port))
     client_app.exec_()
@@ -55,3 +65,7 @@ if __name__ == '__main__':
     # Закрытие графической оболочки, выход из потока
     client_thread.exit_()
     client_thread.join()
+
+
+if __name__ == '__main__':
+    main()
