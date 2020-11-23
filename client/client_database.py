@@ -28,8 +28,8 @@ class ClientStorage:
             self.date = datetime.now()
 
     def __init__(self, client_database):
-
-        self.database_engine = create_engine(client_database, echo=False, pool_recycle=3600,
+        self.client_database = f'sqlite:///client_{client_database}.db3'
+        self.database_engine = create_engine(self.client_database, echo=False, pool_recycle=3600,
                                              connect_args={"check_same_thread": False})
         self.metadata = MetaData()
 
@@ -110,6 +110,12 @@ class ClientStorage:
             query = query.filter_by(user=user)
 
         return [(msg.user, msg.direction, msg.body, msg.date) for msg in query.all()]
+
+    def check_user(self, user):
+        return True if self.session.query(self.KnownUsers).filter_by(name=user).count() else False
+
+    def check_contact(self, contact):
+        return True if self.session.query(self.Contacts).filter_by(name=contact).count() else False
 
 
 # отладка

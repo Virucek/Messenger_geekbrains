@@ -8,7 +8,7 @@ from socket import socket, AF_INET, SOCK_STREAM
 import sys
 
 import tabulate
-from PyQt5.QtCore import QTimer
+from PyQt5.QtCore import QTimer, QThread
 from PyQt5.QtWidgets import QApplication
 
 import server_database
@@ -169,7 +169,7 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                     return
 
                 SERVER_LOGGER.debug(f'Ответ на {PRESENCE} корректный')
-                self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
+                # self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
                 self.client_names[msg[USER][ACCOUNT_NAME]] = client
                 cli_ip, cli_port = client.getpeername()
                 self.database.user_login(msg[USER][ACCOUNT_NAME], cli_ip, cli_port)
@@ -221,7 +221,7 @@ class Server(threading.Thread, metaclass=ServerVerifier):
 
             elif msg[ACTION] == EXIT:
                 SERVER_LOGGER.debug(f'Клиент {msg[FROM]} покинул чатик')
-                self.messages.append(('', create_logout_message(msg[FROM])))
+                # self.messages.append(('', create_logout_message(msg[FROM])))
                 self.database.user_logout(msg[FROM])
                 del self.client_names[msg[FROM]]
                 return
@@ -286,6 +286,7 @@ def print_help():
 
 
 def main():
+
     # parser = argparse.ArgumentParser()
     # parser.add_argument('-a', action='store', dest='ip', default='', help='host ip of server')
     # parser.add_argument('-p', action='store', dest='port', type=int, default=DEFAULT_PORT,
@@ -302,7 +303,6 @@ def main():
         config_window.port.insert(str(DEFAULT_PORT))
         if first_launch:
             config_window.run_button.clicked.connect(run_server)
-
 
     def run_server():
         global config_window
@@ -325,7 +325,7 @@ def main():
         config_window.close()
         # Создание GUI главного окна:
         global main_window
-        main_window = MainWindow()
+        main_window = MainWindow(database)
 
         def show_user_stat():
             global stat_window
@@ -338,22 +338,20 @@ def main():
         main_window.configAction.triggered.connect(server_config)
         main_window.statAction.triggered.connect(show_user_stat)
 
+        main_window.update_thread.start()
+
         def active_users_update():
-            # global main_window
             main_window.active_users_table.setModel(create_model_gui(database))
             main_window.active_users_table.resizeColumnsToContents()
             main_window.active_users_table.resizeRowsToContents()
+            print('f')
 
         active_users_update()
-        timer.timeout.connect(active_users_update)
         main_window.refresh_button.clicked.connect(active_users_update)
-
-    timer = QTimer()
-    timer.start(3000)
 
     server_app = QApplication(sys.argv)
     server_config(first_launch=True)
-    server_app.exec_()
+    sys.exit(server_app.exec_())
 
     # print_help()
     # # Основной цикл сервера:
