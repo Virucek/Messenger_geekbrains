@@ -169,7 +169,7 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                     return
 
                 SERVER_LOGGER.debug(f'Ответ на {PRESENCE} корректный')
-                self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
+                # self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
                 self.client_names[msg[USER][ACCOUNT_NAME]] = client
                 cli_ip, cli_port = client.getpeername()
                 self.database.user_login(msg[USER][ACCOUNT_NAME], cli_ip, cli_port)
@@ -221,7 +221,7 @@ class Server(threading.Thread, metaclass=ServerVerifier):
 
             elif msg[ACTION] == EXIT:
                 SERVER_LOGGER.debug(f'Клиент {msg[FROM]} покинул чатик')
-                self.messages.append(('', create_logout_message(msg[FROM])))
+                # self.messages.append(('', create_logout_message(msg[FROM])))
                 self.database.user_logout(msg[FROM])
                 del self.client_names[msg[FROM]]
                 return
