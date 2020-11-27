@@ -141,8 +141,9 @@ class ServerStorage:
             if user_id.count():
                 user = user_id.first()
                 user.last_login = login_date
-                if key != user.key:
-                    user.key = key
+                auth_user = self.session.query(self.Auth).filter_by(user=user.id).first()
+                if key != auth_user.public_key:
+                    auth_user.public_key = key
 
             act_user_id = self.ActiveUsers(user.id, ip_address, port, login_date)
             self.session.add(act_user_id)

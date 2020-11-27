@@ -102,3 +102,16 @@ AUTHENTICATE_REQUIRED_MSG = {
     RESPONSE: RESPCODE_AUTH_REQUIRED,
     DATA: None,
 }
+
+# Шаблон запроса публичного ключа пользователя
+GET_PUBKEY_REQ_MSG = {
+    ACTION: GET_PUBLIC_KEY,
+    TIME: None,
+    USER: None,
+}
+
+# Шаблон ответа на запрос с публичным ключом от сервера
+PUBKEY_RESP = {
+    RESPONSE: RESPCODE_AUTH_REQUIRED,
+    KEY: None,
+}

@@ -24,7 +24,7 @@ from include.utils import get_message, send_message
 from include.variables import *
 from log_configs.server_log_config import get_logger
 from metaclasses import ServerVerifier
-from server_gui import MainWindow, ConfigWindow, create_model_gui, create_model_stat, UserStatWindow
+from server_gui import MainWindow, ConfigWindow, create_model_stat, UserStatWindow
 
 SERVER_LOGGER = get_logger()
 
@@ -166,6 +166,19 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                 SERVER_LOGGER.debug(f'Сообщение {PRESENCE} корректное. Проверка пользователя')
                 return self.preauthorize_user(msg[USER][ACCOUNT_NAME], client, msg[USER][PUBLIC_KEY])
 
+            elif msg[ACTION] == GET_PUBLIC_KEY:
+                if msg.keys() != protocol.GET_PUBKEY_REQ_MSG.keys():
+                    SERVER_LOGGER.error('В запросе присутствуют лишние поля или отсутствуют нужные!')
+                    return RESPCODE_BAD_REQ
+                SERVER_LOGGER.debug(f'Сообщение {GET_PUBLIC_KEY} корректное')
+                pubkey = self.database.get_pubkey(msg[USER])
+                if pubkey:
+                    send_message(client, create_pubkey_message(pubkey))
+                else:
+                    send_message(client, create_response(RESPCODE_BAD_REQ, \
+                                                         f'Публичный ключ для пользователя {msg[USER]} не найден'))
+                return
+
             elif msg[ACTION] == MSG:
                 if msg.keys() != protocol.CHAT_MSG_CLIENT.keys():
                     if msg.keys() != protocol.CHAT_USER_MSG_CLIENT.keys():
@@ -295,7 +308,10 @@ def create_response(resp_code, _error=None):
         return protocol.SERVER_RESPONSE_OK
     elif resp_code == RESPCODE_BAD_REQ:
         SERVER_LOGGER.error(f'Сформирован BAD REQUEST {RESPCODE_BAD_REQ} ответ')
-        return protocol.SERVER_RESPONSE_BAD_REQUEST
+        response = protocol.SERVER_RESPONSE_BAD_REQUEST.copy()
+        if _error is not None:
+            response[ALERT] = _error
+        return response
     else:
         response = protocol.SERVER_RESPONSE_SERVER_ERROR
         SERVER_LOGGER.error(f'Сформирован SERVER ERROR {RESPCODE_SERVER_ERROR} ответ')
@@ -328,6 +344,13 @@ def create_users_contacts_message(users):
     users_contacts_msg = protocol.RESPONSE_USERS_CONTACTS_MSG.copy()
     users_contacts_msg[ALERT] = users
     return users_contacts_msg
+
+
+@Log()
+def create_pubkey_message(pubkey):
+    pubkey_msg = protocol.PUBKEY_RESP.copy()
+    pubkey_msg[KEY] = pubkey
+    return pubkey_msg
 
 
 def print_help():
@@ -400,16 +423,7 @@ def main():
         main_window.statAction.triggered.connect(show_user_stat)
         main_window.addUserAction.triggered.connect(show_reg_user)
 
-        main_window.update_thread.start()
-
-        def active_users_update():
-            main_window.active_users_table.setModel(create_model_gui(database))
-            main_window.active_users_table.resizeColumnsToContents()
-            main_window.active_users_table.resizeRowsToContents()
-            print('f')
-
-        active_users_update()
-        main_window.refresh_button.clicked.connect(active_users_update)
+        main_window.refresh_button.clicked.connect(main_window.create_active_users_model)
 
     server_app = QApplication(sys.argv)
     server_config(first_launch=True)

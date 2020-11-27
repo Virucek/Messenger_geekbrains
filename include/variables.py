@@ -58,6 +58,7 @@ GET_CONTACTS = 'get_contacts'
 ADD_CONTACT = 'add_contact'
 REMOVE_CONTACT = 'del_contact'
 GET_USERS = 'get_users'
+GET_PUBLIC_KEY = 'get_public_key'
 
 
 EXIT = 'exit'
@@ -67,6 +68,7 @@ TO = 'to'
 MESSAGE = 'message'
 
 DATA = 'dataxxx'
+KEY = 'key'
 
 RESPONSE = 'response'
 ALERT = 'alert'

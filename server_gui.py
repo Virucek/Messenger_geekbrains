@@ -6,32 +6,32 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QDialog, Q
     QFileDialog, QTableView
 
 
-class UpdateThread(QThread):
-    def __init__(self, database, update_tables):
-        super(UpdateThread, self).__init__()
-        self.database = database
-        self.update_tables = update_tables
-
-    def run(self):
-        def active_users_update():
-            self.update_tables.setModel(create_model_gui(self.database))
-            self.update_tables.resizeColumnsToContents()
-            self.update_tables.resizeRowsToContents()
-            # print('f')
-            # QThread.sleep(5000)
-
-        timer = QTimer()
-        timer.timeout.connect(active_users_update)
-        timer.start(3000)
-        self.exec_()
+# class UpdateThread(QThread):
+#     def __init__(self, database, update_tables):
+#         super(UpdateThread, self).__init__()
+#         self.database = database
+#         self.update_tables = update_tables
+#
+#     def run(self):
+#         def active_users_update():
+#             self.update_tables.setModel(create_model_gui(self.database))
+#             self.update_tables.resizeColumnsToContents()
+#             self.update_tables.resizeRowsToContents()
+#             # print('f')
+#             # QThread.sleep(5000)
+#
+#         timer = QTimer()
+#         timer.timeout.connect(active_users_update)
+#         timer.start(3000)
+#         self.exec_()
 
 
 class MainWindow(QMainWindow):
     def __init__(self, database):
         super().__init__()
-        self.init_ui()
         self.database = database
-        self.update_thread = UpdateThread(self.database, self.active_users_table)
+        self.init_ui()
+        # self.update_thread = UpdateThread(self.database, self.active_users_table)
 
     def init_ui(self):
         exitAction = QAction('Выход', self)
@@ -61,7 +61,35 @@ class MainWindow(QMainWindow):
         self.refresh_button.setFixedSize(140, 25)
 
         self.setWindowTitle('Server')
+
+        self.create_active_users_model()
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.create_active_users_model)
+        self.timer.start(3000)
+
         self.show()
+
+    def create_active_users_model(self):
+        users_list = self.database.active_users_list()
+        list = QStandardItemModel()
+        list.setHorizontalHeaderLabels(['Имя пользователя', 'IP адрес', 'Порт', 'Время входа'])
+        for user in users_list:
+            user_name, ip, port, time = user
+            user_name = QStandardItem(user_name)
+            user_name.setEditable(False)
+
+            ip = QStandardItem(ip)
+            ip.setEditable(False)
+
+            port = QStandardItem(str(port))
+            port.setEditable(False)
+
+            time = QStandardItem(str(time))
+            time.setEditable(False)
+            list.appendRow([user_name, ip, port, time])
+        self.active_users_table.setModel(list)
+        self.active_users_table.resizeColumnsToContents()
+        self.active_users_table.resizeRowsToContents()
 
 
 class ConfigWindow(QDialog):
@@ -151,27 +179,6 @@ class UserStatWindow(QDialog):
         self.user_stat_table.setFixedSize(570, 190)
 
         self.show()
-
-
-def create_model_gui(database):
-    users_list = database.active_users_list()
-    list = QStandardItemModel()
-    list.setHorizontalHeaderLabels(['Имя пользователя', 'IP адрес', 'Порт', 'Время входа'])
-    for user in users_list:
-        user_name, ip, port, time = user
-        user_name = QStandardItem(user_name)
-        user_name.setEditable(False)
-
-        ip = QStandardItem(ip)
-        ip.setEditable(False)
-
-        port = QStandardItem(str(port))
-        port.setEditable(False)
-
-        time = QStandardItem(str(time))
-        time.setEditable(False)
-        list.appendRow([user_name, ip, port, time])
-    return list
 
 
 def create_model_stat(database):
