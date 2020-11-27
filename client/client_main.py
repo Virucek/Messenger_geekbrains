@@ -1,4 +1,6 @@
 """ Клиентский скрипт """
+import binascii
+import hmac
 import json
 import sys
 import threading
@@ -22,12 +24,15 @@ class ClientTransport(threading.Thread, QObject):
     new_message = pyqtSignal(str)
     connection_lost = pyqtSignal()
 
-    def __init__(self, username, ip, port, database):
+    def __init__(self, username, password_hash, ip, port, database):
         threading.Thread.__init__(self)
         QObject.__init__(self)
 
         self.username = username
         self.database = database
+
+        self.password_hash = password_hash
+        self.digest = None
 
         self.__init_connection(ip, port)
         # self.get_response_safe()  # Получаем приветственное сообщение (костыль :)
@@ -47,8 +52,18 @@ class ClientTransport(threading.Thread, QObject):
         else:
             send_message(self.client_socket, self.create_presence())
             CLIENT_LOGGER.info(f'Отправлено presence сообщение')
-            if not self.get_response_safe():
+            answer = self.get_response_safe()
+            if not answer:
                 exit(1)
+            elif RESPONSE in answer and not answer[RESPONSE] == RESPCODE_AUTH_REQUIRED:
+                exit(1)
+            else:
+                send_message(self.client_socket, self.create_authenticate())
+                CLIENT_LOGGER.info(f'Отправлено authenticate сообщение')
+                time.sleep(3)
+                CLIENT_LOGGER.info(f'Прошло 3 секунды...')
+                if not self.get_response_safe():
+                    exit(1)
 
     @Log()
     def update_users_list(self):
@@ -82,6 +97,11 @@ class ClientTransport(threading.Thread, QObject):
                 if ALERT in message:
                     CLIENT_LOGGER.debug(f'Получен корректный ответ от сервера: {message[RESPONSE]}')
                     return True
+            elif message[RESPONSE] == RESPCODE_AUTH_REQUIRED:
+                CLIENT_LOGGER.debug(f'Полученный ответ от сервера: {message[RESPONSE]}')
+                hash = hmac.new(binascii.hexlify(self.password_hash), message[DATA].encode('ascii'), 'MD5')
+                self.digest = hash.digest()
+                return True
             CLIENT_LOGGER.debug('Сервер ответил ошибкой')
             if ALERT in message:
                 CLIENT_LOGGER.debug(message[ALERT])
@@ -101,6 +121,16 @@ class ClientTransport(threading.Thread, QObject):
         msg[USER][ACCOUNT_NAME] = self.username
         msg[USER][STATUS] = 'Presense status test?'
         CLIENT_LOGGER.debug(f'Сформировано {PRESENCE} сообщение:\n{msg}')
+        return msg
+
+    @Log()
+    def create_authenticate(self):
+        msg = protocol.AUTHENTICATE_MSG
+        msg[TIME] = time.time()
+        msg[USER][ACCOUNT_NAME] = self.username
+        msg[USER][STATUS] = 'Authenticate'
+        msg[USER][PASSWORD] = binascii.b2a_base64(self.digest).decode('ascii')
+        CLIENT_LOGGER.debug(f'Сформировано {AUTHENTICATE} сообщение:\n{msg}')
         return msg
 
     @Log()

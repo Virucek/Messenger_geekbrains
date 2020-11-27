@@ -41,11 +41,13 @@ class MainWindow(QMainWindow):
         self.configAction = QAction('Настройки', self)
 
         self.statAction = QAction('Статистика пользователей', self)
+        self.addUserAction = QAction('Добавить пользователя', self)
 
         self.toolbar = self.addToolBar('mainBar')
         self.toolbar.addAction(exitAction)
         self.toolbar.addAction(self.configAction)
         self.toolbar.addAction(self.statAction)
+        self.toolbar.addAction(self.addUserAction)
 
         self.setFixedSize(600, 430)
 

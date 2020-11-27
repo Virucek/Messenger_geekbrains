@@ -1,5 +1,8 @@
 """ Серверный скрипт """
 import argparse
+import binascii
+import hmac
+import json
 import os
 import threading
 import time
@@ -12,9 +15,11 @@ from PyQt5.QtCore import QTimer, QThread
 from PyQt5.QtWidgets import QApplication
 
 import server_database
+from add_user import RegisterUser
 from include import protocol
-from include.decorators import log
+from include.decorators import log, Log
 from include.descriptors import Port, IpAddress
+from include.protocol import AUTHENTICATE_REQUIRED_MSG
 from include.utils import get_message, send_message
 from include.variables import *
 from log_configs.server_log_config import get_logger
@@ -89,12 +94,13 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                                                f'{resp_msg}')
                             send_message(client, resp_msg)
 
-                    except ValueError:
-                        _error = 'Ошибка декодирования сообщения от клиента'
+                    except ValueError as e:
+                        _error = f'Ошибка декодирования сообщения от клиента {e}'
                         SERVER_LOGGER.error(_error)
                         send_message(client, create_response(RESPCODE_SERVER_ERROR, _error))
-                    except:
-                        SERVER_LOGGER.error(f'Клиент {client.getpeername()} отключился!')
+                    except Exception as e:
+                        SERVER_LOGGER.error(f'Клиент {client.getpeername()} отключился! {e}')
+                        print(e)
                         self.clients.remove(client)
 
             if send_data_lst and self.messages:
@@ -158,22 +164,7 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                     SERVER_LOGGER.error(f'В запросе неверный объект {USER}!')
                     return RESPCODE_BAD_REQ
                 SERVER_LOGGER.debug(f'Сообщение {PRESENCE} корректное. Проверка пользователя')
-
-                if msg[USER][ACCOUNT_NAME] in self.client_names.keys():
-                    SERVER_LOGGER.error('Имя пользователя уже занято')
-                    response = protocol.SERVER_RESPONSE_BAD_REQUEST
-                    response[ALERT] = 'Имя пользователя уже занято'
-                    send_message(client, response)
-                    self.clients.remove(client)
-                    client.close()
-                    return
-
-                SERVER_LOGGER.debug(f'Ответ на {PRESENCE} корректный')
-                # self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
-                self.client_names[msg[USER][ACCOUNT_NAME]] = client
-                cli_ip, cli_port = client.getpeername()
-                self.database.user_login(msg[USER][ACCOUNT_NAME], cli_ip, cli_port)
-                return RESPCODE_OK
+                return self.preauthorize_user(msg[USER][ACCOUNT_NAME], client, msg[USER][PUBLIC_KEY])
 
             elif msg[ACTION] == MSG:
                 if msg.keys() != protocol.CHAT_MSG_CLIENT.keys():
@@ -225,11 +216,77 @@ class Server(threading.Thread, metaclass=ServerVerifier):
                 self.database.user_logout(msg[FROM])
                 del self.client_names[msg[FROM]]
                 return
-            SERVER_LOGGER.error(f'Такое значение {ACTION} {msg[ACTION]} не поддерживается!')
-            return RESPCODE_BAD_REQ
-        SERVER_LOGGER.error(f'{ACTION} отсутствует в сообщении')
-        return RESPCODE_BAD_REQ
 
+            else:
+                SERVER_LOGGER.error(f'Такое значение {ACTION} {msg[ACTION]} не поддерживается!')
+                return RESPCODE_BAD_REQ
+
+        else:
+            SERVER_LOGGER.error(f'{ACTION} отсутствует в сообщении')
+            return RESPCODE_BAD_REQ
+
+    @Log()
+    def preauthorize_user(self, name, client_socket, pubkey):
+        if name in self.client_names.keys():
+            SERVER_LOGGER.error('Имя пользователя уже занято')
+            response = protocol.SERVER_RESPONSE_BAD_REQUEST
+            response[ALERT] = 'Имя пользователя уже занято'
+            send_message(client_socket, response)
+            self.clients.remove(client_socket)
+            client_socket.close()
+            return
+
+        elif not self.database.check_user(name):
+            SERVER_LOGGER.error('Пользователь не зарегистрирован')
+            response = protocol.SERVER_RESPONSE_BAD_REQUEST
+            response[ALERT] = 'Пользователь не зарегистрирован'
+            send_message(client_socket, response)
+            self.clients.remove(client_socket)
+            client_socket.close()
+            return
+
+        message = AUTHENTICATE_REQUIRED_MSG
+        rand_msg = binascii.hexlify(os.urandom(64))
+        message[DATA] = rand_msg.decode('ascii')
+        print(self.database.get_passwd(name))
+
+        hash_pwd = hmac.new(self.database.get_passwd(name), rand_msg, 'MD5')
+        print(hash_pwd)
+        digest = hash_pwd.digest()
+        print(digest)
+        send_message(client_socket, message)
+
+        ans = get_message(client_socket)
+        client_digest = binascii.a2b_base64(ans[USER][PASSWORD])
+
+        if ACTION in ans and ans[ACTION] == AUTHENTICATE:
+            print(1111111111111)
+            if hmac.compare_digest(digest, client_digest):
+                print(333333333333333)
+                SERVER_LOGGER.debug(f'Ответ на {PRESENCE} корректный')
+                # self.messages.append(('', create_login_message(msg[USER][ACCOUNT_NAME])))
+                self.client_names[name] = client_socket
+                cli_ip, cli_port = client_socket.getpeername()
+                self.database.user_login(name, cli_ip, cli_port, pubkey)
+                return RESPCODE_OK
+            else:
+                print(22222222222222)
+                SERVER_LOGGER.error('Пароль не верен')
+                response = protocol.SERVER_RESPONSE_BAD_REQUEST
+                response[ALERT] = 'Пароль не верен'
+                send_message(client_socket, response)
+                self.clients.remove(client_socket)
+                client_socket.close()
+                return
+        else:
+            print(444444444444444)
+            SERVER_LOGGER.error('Некорректный запрос на аутентификацию!')
+            response = protocol.SERVER_RESPONSE_BAD_REQUEST
+            response[ALERT] = 'Некорректный запрос на аутентификацию!'
+            send_message(client_socket, response)
+            self.clients.remove(client_socket)
+            client_socket.close()
+            return
 
 @log
 def create_response(resp_code, _error=None):
@@ -334,9 +391,14 @@ def main():
             stat_window.user_stat_table.resizeColumnsToContents()
             stat_window.user_stat_table.resizeRowsToContents()
 
+        def show_reg_user():
+            global add_user_window
+            add_user_window = RegisterUser(database, server)
+
         main_window.statusBar().showMessage(f'Server is working; port = {port}')
         main_window.configAction.triggered.connect(server_config)
         main_window.statAction.triggered.connect(show_user_stat)
+        main_window.addUserAction.triggered.connect(show_reg_user)
 
         main_window.update_thread.start()
 
