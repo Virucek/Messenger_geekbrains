@@ -52,6 +52,13 @@ class ServerStorage:
             self.sent = 0
             self.accepted = 0
 
+    class Auth:
+        def __init__(self, user_id, passwd):
+            self.id = None
+            self.user = user_id
+            self.passwd = passwd
+            self.public_key = None
+
     def __init__(self, database_file=SERVER_DATABASE):
         self.database_engine = create_engine(database_file, echo=False, pool_recycle=3600,
                                              connect_args={"check_same_thread": False})
@@ -92,6 +99,13 @@ class ServerStorage:
                                  Column('accepted', Integer),
                                  )
 
+        auth_table = Table('auth', self.metadata,
+                           Column('id', Integer, primary_key=True),
+                           Column('user', ForeignKey('users.id')),
+                           Column('passwd', String),
+                           Column('public_key', String)
+                           )
+
         self.metadata.create_all(bind=self.database_engine)
 
         mapper(self.Users, users_table)
@@ -99,6 +113,7 @@ class ServerStorage:
         mapper(self.LoginHistory, login_history_table)
         mapper(self.UserContacts, user_contacts_table)
         mapper(self.UserStats, user_stats_table)
+        mapper(self.Auth, auth_table)
 
         session = sessionmaker(bind=self.database_engine)
         self.session = session()
@@ -107,20 +122,28 @@ class ServerStorage:
         self.session.commit()
 
     @Log()
-    def user_login(self, user_name, ip_address, port):
+    def user_register(self, user_name, passwd):
+        user = self.Users(user_name=user_name)
+        self.session.add(user)
+        self.session.commit()
+        passwd_ = self.Auth(user.id, passwd)
+        self.session.add(passwd_)
+        user_stat = self.UserStats(user.id)
+        self.session.add(user_stat)
+        self.session.commit()
+
+    @Log()
+    def user_login(self, user_name, ip_address, port, key):
         try:
             login_date = datetime.now()
             user_id = self.session.query(self.Users).filter_by(name=user_name)
 
-            if not user_id.count():
-                user = self.Users(user_name=user_name)
-                self.session.add(user)
-                self.session.commit()
-                user_stat = self.UserStats(user.id)
-                self.session.add(user_stat)
-            else:
+            if user_id.count():
                 user = user_id.first()
                 user.last_login = login_date
+                auth_user = self.session.query(self.Auth).filter_by(user=user.id).first()
+                if key != auth_user.public_key:
+                    auth_user.public_key = key
 
             act_user_id = self.ActiveUsers(user.id, ip_address, port, login_date)
             self.session.add(act_user_id)
@@ -150,7 +173,6 @@ class ServerStorage:
         # return users
         return [user[0] for user in self.session.query(self.Users.name).all()]
 
-    @Log()
     def active_users_list(self):
         users = self.session.query(
             self.Users.name,
@@ -232,6 +254,17 @@ class ServerStorage:
         ).join(self.Users).all()
         # Возвращаем список кортежей
         return query
+
+    def get_pubkey(self, username):
+        return (self.session.query(self.Auth.public_key).join(self.Users, self.Auth.user == self.Users.id).\
+            filter(self.Users.name == username).first())[0]
+
+    def get_passwd(self, username):
+        return (self.session.query(self.Auth.passwd).join(self.Users, self.Auth.user == self.Users.id). \
+            filter(self.Users.name == username).first())[0]
+
+    def check_user(self, username):
+        return True if self.session.query(self.Users).filter_by(name=username).count() else False
 
 
 if __name__ == '__main__':

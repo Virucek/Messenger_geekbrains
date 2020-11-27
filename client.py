@@ -37,6 +37,7 @@ def main():
     # Если пользователь ввёл имя и нажал ОК, то сохранение, удаление окна и работа дальше. Иначе - выход
     if start_dialog.ok_pressed:
         user_name = start_dialog.client_name.text()
+        password_hash = start_dialog.password_hash
         del start_dialog
     else:
         exit(0)
@@ -49,7 +50,7 @@ def main():
 
     # Создаём объекта потока
     try:
-        client_thread = ClientTransport(user_name, server_address, server_port, database)
+        client_thread = ClientTransport(user_name, password_hash, server_address, server_port, database)
     except ServerError as error:
         print(error.text)
         exit(1)

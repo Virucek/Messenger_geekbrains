@@ -1,8 +1,10 @@
+from Cryptodome.Cipher import PKCS1_OAEP
+from Cryptodome.PublicKey import RSA
 from PyQt5.QtWidgets import QMainWindow, qApp, QMessageBox
 from PyQt5.QtGui import QStandardItemModel, QStandardItem, QBrush, QColor
 from PyQt5.QtCore import pyqtSlot, Qt
 import sys
-
+import base64
 
 sys.path.append('../')
 from client.main_window_conv import Ui_MainClientWindow
@@ -45,8 +47,13 @@ class ClientMainWindow(QMainWindow):
         self.history_model = None
         self.messages = QMessageBox()
         self.current_chat = None
+        self.current_chat_key = None
         self.ui.list_messages.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
         self.ui.list_messages.setWordWrap(True)
+
+        # Шифровчик и дешифровчик сообщений
+        self.encrypter = None
+        # self.decrypter = PKCS1_OAEP.new(self.transport.keys)
 
         # Сигнал на двойнок клик по листу контактов
         self.ui.list_contacts.doubleClicked.connect(self.select_active_user)
@@ -108,8 +115,21 @@ class ClientMainWindow(QMainWindow):
         # вызываем основную функцию
         self.set_active_user()
 
-    # Функция устанавливающяя активного собеседника
+    # Функция, устанавливающая активного собеседника (при выборе чата)
     def set_active_user(self):
+        # запрос публичного ключа
+        try:
+            self.current_chat_key = self.transport.pubkey_request(self.current_chat)
+            if self.current_chat_key:
+                self.encrypter = PKCS1_OAEP.new(RSA.import_key(self.current_chat_key))
+        except (OSError) as e:
+            self.current_chat_key = None
+            self.encrypter = None
+            CLIENT_LOGGER.debug(f'Не удалось получить ключ для {self.current_chat} - {e}')
+        if not self.current_chat_key:
+            self.messages.warning(self, 'Ошибка', 'Невозможно получить ключ шифрования для данного чата.')
+            return
+
         # Ставим надпись и активируем кнопки
         self.ui.label_new_message.setText(f'Введите сообщенние для {self.current_chat}:')
         self.ui.btn_clear.setDisabled(False)
@@ -198,8 +218,10 @@ class ClientMainWindow(QMainWindow):
         self.ui.text_message.clear()
         if not message_text:
             return
+        msg_text_encrypted = self.encrypter.encrypt(message_text.encode('utf-8'))
+        msg_text_encrypted_b64 = base64.b64encode(msg_text_encrypted)
         try:
-            self.transport.send_message(self.current_chat, message_text)
+            self.transport.send_message(self.current_chat, msg_text_encrypted_b64.decode('ascii'))
             pass
         except ServerError as err:
             self.messages.critical(self, 'Ошибка', err.text)
@@ -216,7 +238,7 @@ class ClientMainWindow(QMainWindow):
             CLIENT_LOGGER.debug(f'Отправлено сообщение для {self.current_chat}: {message_text}')
             self.history_list_update()
 
-    # Слот приёма нового сообщений
+    # Слот приёма нового сообщения
     @pyqtSlot(str)
     def message(self, sender):
         if sender == self.current_chat:

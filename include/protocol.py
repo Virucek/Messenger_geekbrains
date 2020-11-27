@@ -9,7 +9,8 @@ PRESENCE_MSG_CLIENT = {
     TYPE: STATUS,
     USER: {
         ACCOUNT_NAME: NOT_LOGGED_USER,
-        STATUS: None
+        STATUS: None,
+        PUBLIC_KEY: None,
     }
 }
 # Шаблон успешного ответа
@@ -84,4 +85,33 @@ GET_USERS_MSG = {
     ACTION: GET_USERS,
     TIME: None,
     USER_LOGIN: None
+}
+
+# Шаблон запроса для аутентификации от клиента
+AUTHENTICATE_MSG = {
+    ACTION: AUTHENTICATE,
+    TIME: None,
+    USER: {
+        ACCOUNT_NAME: None,
+        PASSWORD: None,
+    }
+}
+
+# Шаблон запроса пароля для аутентификации от сервера
+AUTHENTICATE_REQUIRED_MSG = {
+    RESPONSE: RESPCODE_AUTH_REQUIRED,
+    DATA: None,
+}
+
+# Шаблон запроса публичного ключа пользователя
+GET_PUBKEY_REQ_MSG = {
+    ACTION: GET_PUBLIC_KEY,
+    TIME: None,
+    USER: None,
+}
+
+# Шаблон ответа на запрос с публичным ключом от сервера
+PUBKEY_RESP = {
+    RESPONSE: RESPCODE_AUTH_REQUIRED,
+    KEY: None,
 }

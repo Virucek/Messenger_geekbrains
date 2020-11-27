@@ -42,6 +42,8 @@ ACCOUNT_NAME = 'account_name'
 STATUS = 'status'
 USER_LOGIN = 'user_login'
 USER_ID = 'user_id'
+PASSWORD = 'password'
+PUBLIC_KEY = 'public_key'
 
 NOT_LOGGED_USER = 'Anonymous'
 # Actions
@@ -56,6 +58,7 @@ GET_CONTACTS = 'get_contacts'
 ADD_CONTACT = 'add_contact'
 REMOVE_CONTACT = 'del_contact'
 GET_USERS = 'get_users'
+GET_PUBLIC_KEY = 'get_public_key'
 
 
 EXIT = 'exit'
@@ -63,6 +66,9 @@ EXIT = 'exit'
 FROM = 'from'
 TO = 'to'
 MESSAGE = 'message'
+
+DATA = 'dataxxx'
+KEY = 'key'
 
 RESPONSE = 'response'
 ALERT = 'alert'
@@ -76,3 +82,5 @@ RESPCODE_BAD_REQ = 400
 RESPONSE_BAD_REQUEST_TEXT = 'Bad Request'
 
 RESPCODE_SERVER_ERROR = 500
+
+RESPCODE_AUTH_REQUIRED = 511
