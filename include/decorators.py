@@ -12,6 +12,7 @@ else:
 
 
 def log(func):
+    """Функция-декоратор логирования функции"""
     def wrapper(*args, **kwargs):
         logger.debug(f'Вызывается функция: [{func.__name__}] c аргументами ({args}{kwargs})\n'
                      f'Функция вызывается из функции [{inspect.stack()[1].function}]\n'
@@ -24,7 +25,7 @@ def log(func):
 
 
 class Log:
-
+    """Класс-декоратор логирования функции"""
     def __call__(self, func):
         def wrapper(*args, **kwargs):
             logger.debug(f'Вызывается функция: [{func.__name__}] c аргументами ({args}{kwargs})\n'

@@ -25,6 +25,11 @@ CLIENT_LOGGER = get_logger()
 
 
 class ClientTransport(threading.Thread, QObject):
+    """
+    Класс клиента.
+    Отвечает за взаимодействие с сервером: отправляет и принимает сообщения от сервера.
+    Сохраняет данный в БД, загружает данные из БД
+    """
     new_message = pyqtSignal(str)
     connection_lost = pyqtSignal()
 
@@ -49,6 +54,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def __init_connection(self, ip, port):
+        """Метод инициализации подключения к серверу"""
         self.client_socket = socket(AF_INET, SOCK_STREAM)
         try:
             self.client_socket.connect((ip, port))
@@ -74,6 +80,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def update_users_list(self):
+        """Метод обновления списка пользователей. Отправляет запрос на сервер, по получении овтета - обновляет БД"""
         send_message(self.client_socket, self.get_users_msg())
         CLIENT_LOGGER.info(f'Отправлено get_users сообщение')
         answer = self.get_response_safe()
@@ -82,6 +89,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def update_contacts_list(self):
+        """Метод обновления списка контактов. Отправляет запрос на сервер, по получении овтета - обновляет БД"""
         send_message(self.client_socket, self.get_contacts_msg())
         CLIENT_LOGGER.info(f'Отправлено get_contacts сообщение')
         answer = self.get_response_safe()
@@ -95,6 +103,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def process_incoming_message(self, message):
+        """Метод обработки входящего сообщения"""
         if RESPONSE in message:
             if message[RESPONSE] == RESPCODE_OK:
                 CLIENT_LOGGER.debug(f'Полученный ответ от сервера: {message[RESPONSE]}')
@@ -132,6 +141,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def create_presence(self):
+        """Метод создания presence запроса"""
         msg = protocol.PRESENCE_MSG_CLIENT
         msg[TIME] = time.time()
         msg[USER][ACCOUNT_NAME] = self.username
@@ -142,6 +152,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def create_authenticate(self):
+        """Метод создания аутентификационного запроса"""
         msg = protocol.AUTHENTICATE_MSG
         msg[TIME] = time.time()
         msg[USER][ACCOUNT_NAME] = self.username
@@ -152,6 +163,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def get_contacts_msg(self):
+        """Метод создания запроса списка контактов"""
         msg = protocol.GET_USER_CONTACTS_MSG
         msg[TIME] = time.time()
         msg[USER_LOGIN] = self.username
@@ -160,6 +172,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def get_users_msg(self):
+        """Метод создания запроса списка пользователей"""
         msg = protocol.GET_USERS_MSG
         msg[TIME] = time.time()
         msg[USER_LOGIN] = self.username
@@ -168,6 +181,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def get_pubkey_msg(self, username):
+        """Метод создания запроса публичного ключа пользователя по его имени"""
         msg = protocol.GET_PUBKEY_REQ_MSG
         msg[TIME] = time.time()
         msg[USER] = username
@@ -175,6 +189,7 @@ class ClientTransport(threading.Thread, QObject):
         return msg
 
     def pubkey_request(self, username):
+        """Метод отправки запроса публичного ключа и получения ответа"""
         send_message(self.client_socket, self.get_pubkey_msg(username))
         ans = self.get_response_safe()
         if RESPONSE in ans and ans[RESPONSE] == RESPCODE_AUTH_REQUIRED:
@@ -184,6 +199,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def get_response_safe(self):
+        """Метод приема ответов от сервера"""
         try:
             answer = get_message(self.client_socket)
             CLIENT_LOGGER.info(f'Получено сообщение от сервера: {answer}')
@@ -197,6 +213,7 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def create_message(self, user_to, message):
+        """Метод создания сообщения"""
         time.sleep(0.5)
         message_full = protocol.CHAT_MSG_CLIENT.copy()
         message_full[TIME] = time.time()
@@ -209,10 +226,12 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def send_message(self, user_to, message_txt):
+        """Метод отправки созданного сообщения"""
         return send_message(self.client_socket, self.create_message(user_to, message_txt))
 
     @Log()
     def create_exit_message(self):
+        """Метод создания сообщения на выход пользователя из чата"""
         msg = protocol.EXIT_MSG_CLIENT
         msg[TIME] = time.time()
         msg[FROM] = self.username
@@ -221,10 +240,12 @@ class ClientTransport(threading.Thread, QObject):
 
     @Log()
     def exit_(self):
+        """Метод отправки сообщения на выход пользователя из чата"""
         return send_message(self.client_socket, self.create_exit_message())
 
     @Log()
     def create_add_contact_msg(self, user_contact):
+        """Метод создания запроса на добавление контакта"""
         msg = protocol.ADD_USER_CONTACT_MSG.copy()
         msg[USER_ID] = user_contact
         msg[TIME] = time.time()
@@ -233,10 +254,12 @@ class ClientTransport(threading.Thread, QObject):
         return msg
 
     def add_contact(self, user_contact):
+        """Метод отправки запроса на добавление контакта"""
         return send_message(self.client_socket, self.create_add_contact_msg(user_contact))
 
     @Log()
     def create_remove_contact_msg(self, user_contact):
+        """Метод отправки запроса на удаление контакта"""
         msg = protocol.REMOVE_USER_CONTACT_MSG.copy()
         msg[USER_ID] = user_contact
         msg[TIME] = time.time()
@@ -245,9 +268,11 @@ class ClientTransport(threading.Thread, QObject):
         return msg
 
     def remove_contact(self, user_contact):
+        """Метод отправки запроса на удаление контакта"""
         return send_message(self.client_socket, self.create_remove_contact_msg(user_contact))
 
     def run(self):
+        """Основной цикл клиента"""
         CLIENT_LOGGER.debug('Запущен процесс клиента.')
         while self.running:
             # Отдыхаем секунду и снова пробуем захватить сокет. - из примера

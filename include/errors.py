@@ -1,5 +1,9 @@
+"""Кастомные исключения"""
+
+
 # Исключение - ошибка сервера
 class ServerError(Exception):
+    """Исключение - ошибка сервера"""
     def __init__(self, text):
         self.text = text
 

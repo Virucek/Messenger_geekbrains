@@ -1,30 +1,9 @@
 import sys
 
-from PyQt5.QtCore import QThread, QTimer
+from PyQt5.QtCore import QTimer
 from PyQt5.QtGui import QStandardItemModel, QStandardItem
 from PyQt5.QtWidgets import QApplication, QMainWindow, QAction, qApp, QDialog, QLabel, QLineEdit, QPushButton, \
     QFileDialog, QTableView
-
-
-# class UpdateThread(QThread):
-#     def __init__(self, database, update_tables):
-#         super(UpdateThread, self).__init__()
-#         self.database = database
-#         self.update_tables = update_tables
-#
-#     def run(self):
-#         def active_users_update():
-#             self.update_tables.setModel(create_model_gui(self.database))
-#             self.update_tables.resizeColumnsToContents()
-#             self.update_tables.resizeRowsToContents()
-#             # print('f')
-#             # QThread.sleep(5000)
-#
-#         timer = QTimer()
-#         timer.timeout.connect(active_users_update)
-#         timer.start(3000)
-#         self.exec_()
-
 
 class MainWindow(QMainWindow):
     def __init__(self, database):
