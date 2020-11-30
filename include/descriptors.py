@@ -6,7 +6,7 @@ SERVER_LOGGER = get_logger()
 
 
 class Port:
-
+    """Дескриптор для проверки порта"""
     def __set__(self, instance, value):
         if 1024 > value or value > 65535:
             SERVER_LOGGER.error(f'Некорректный порт для прослушивания! - {value} не в [1024; 65535]')
@@ -18,7 +18,7 @@ class Port:
 
 
 class IpAddress:
-
+    """Дескриптор для проверка IPv4 адреса"""
     def __set__(self, instance, value):
         if value:
             try:

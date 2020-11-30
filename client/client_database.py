@@ -8,18 +8,24 @@ from include.decorators import Log
 
 
 class ClientStorage:
-
+    """
+    Класс клиентского хранилища (бд).
+    Хранятся известные пользователи, контакты текущего пользователя, истории переписок
+    """
     class KnownUsers:
+        """Класс-модель известных данному пользователю других клиентов"""
         def __init__(self, user_name):
             self.id = None
             self.name = user_name
 
     class Contacts:
+        """Класс-модель контактов данного пользователя"""
         def __init__(self, contact_name):
             self.id = None
             self.name = contact_name
 
     class Messages:
+        """Класс-модель истории переписки"""
         def __init__(self, user_name, direction, body):
             self.id = None
             self.user = user_name
